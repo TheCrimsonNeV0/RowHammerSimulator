@@ -9,7 +9,7 @@ FLIP_THRESHOLD = 1000000
 
 class ListEditor:
     def __init__(self):
-        self.memory = Memory(MEMORY_SIZE, FLIP_THRESHOLD)
+        self.memory = Memory(MEMORY_SIZE, FLIP_THRESHOLD, True, 1000, True, 0.05)
         self.lock = threading.Lock()
 
     def edit_list(self, editor_name):
@@ -17,20 +17,20 @@ class ListEditor:
             if editor_name == "hammer":
                 self.memory.access(10)
                 self.memory.access(12)
-            elif editor_name == "recharge":
+            elif editor_name == "display":
                 print("Access Count: " + str(self.memory.get_access_count(10)) + " "
                       + str(self.memory.get_memory()[11].did_flip))
 
 
 def hammer(list_editor):  # Simulate hammering behavior
     list_editor.edit_list("hammer")
-    threading.Timer(0, hammer, args=(list_editor,)).start()
+    threading.Timer(0.001, hammer, args=(list_editor,)).start()
 
 
-def your_function(list_editor):
+def display(list_editor):
     # Implement your logic for editing the list in function 2
-    list_editor.edit_list("recharge")
-    threading.Timer(5, your_function, args=(list_editor,)).start()
+    list_editor.edit_list("display")
+    threading.Timer(5, display, args=(list_editor,)).start()
 
 
 def main():
@@ -38,7 +38,7 @@ def main():
 
     # Create threads
     thread1 = threading.Thread(target=hammer, args=(list_editor,))
-    thread2 = threading.Thread(target=your_function, args=(list_editor,))
+    thread2 = threading.Thread(target=display, args=(list_editor,))
 
     # Start both threads
     thread1.start()
