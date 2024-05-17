@@ -1,5 +1,8 @@
 class MemoryCell:
     def __init__(self, access_count):
+        self.left_access_count = 0
+        self.right_access_count = 0
+
         self.access_count = access_count
         self.did_flip = False
 

@@ -15,16 +15,16 @@ class ListEditor:
     def edit_list(self, editor_name):
         with self.lock:
             if editor_name == "hammer":
-                self.memory.access(10)
-                self.memory.access(12)
+                self.memory.access(3)
+                self.memory.access(5)
             elif editor_name == "display":
-                print("Access Count: " + str(self.memory.get_access_count(10) + self.memory.get_access_count(12)) + " "
-                      + str(self.memory.get_memory()[11].did_flip))
-
+                print("Access Count: " + str(self.memory.get_access_count(3) + self.memory.get_access_count(5)) + " "
+                      + str(self.memory.__memory__[4].did_flip))
+                print("6 did flip:", self.memory.__memory__[6].did_flip)
 
 def hammer(list_editor):  # Simulate hammering behavior
     list_editor.edit_list("hammer")
-    threading.Timer(0.001, hammer, args=(list_editor,)).start()
+    threading.Timer(1, hammer, args=(list_editor,)).start()
 
 
 def display(list_editor):

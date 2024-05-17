@@ -52,18 +52,36 @@ class Memory:
     def access(self, row):
         self.__memory__[row].access()
 
+        if row == 0:
+            self.__memory__[row + 1].left_access_count += 1
+        elif row == self.__size__ - 1:
+            self.__memory__[row - 1].right_access_count += 1
+        else:
+            self.__memory__[row + 1].left_access_count += 1
+            self.__memory__[row - 1].right_access_count += 1
+
         # Simulation operations
         if row == 0:
-            if self.__flip_threshold__ <= self.get_adjacent_access_count(row + 1) and not self.__memory__[row].did_flip:
+            if self.__flip_threshold__ <= self.__memory__[row + 1].left_access_count + self.__memory__[row + 1].right_access_count and not self.__memory__[row + 1].did_flip:
                 self.__memory__[row + 1].flip()
+                self.__memory__[row + 1].left_access_count = 0
+                self.__memory__[row + 1].right_access_count = 0
         elif row == self.__size__ - 1:
-            if self.__flip_threshold__ <= self.get_adjacent_access_count(row - 1) and not self.__memory__[row].did_flip:
+            if self.__flip_threshold__ <= self.__memory__[row - 1].left_access_count + self.__memory__[row - 1].right_access_count and not self.__memory__[row - 1].did_flip:
                 self.__memory__[row - 1].flip()
+                self.__memory__[row - 1].left_access_count = 0
+                self.__memory__[row - 1].right_access_count = 0
         else:
-            if self.__flip_threshold__ <= self.get_adjacent_access_count(row - 1) and not self.__memory__[row].did_flip:
-                self.__memory__[row - 1].flip()
-            if self.__flip_threshold__ <= self.get_adjacent_access_count(row + 1) and not self.__memory__[row].did_flip:
+            if self.__flip_threshold__ <= self.__memory__[row + 1].left_access_count + self.__memory__[row + 1].right_access_count and not self.__memory__[row + 1].did_flip:
                 self.__memory__[row + 1].flip()
+                self.__memory__[row + 1].left_access_count = 0
+                self.__memory__[row + 1].right_access_count = 0
+
+            if self.__flip_threshold__ <= self.__memory__[row - 1].left_access_count + self.__memory__[
+                row - 1].right_access_count and not self.__memory__[row - 1].did_flip:
+                self.__memory__[row - 1].flip()
+                self.__memory__[row - 1].left_access_count = 0
+                self.__memory__[row - 1].right_access_count = 0
 
         # Mitigation operations
         # Target Row Refresh
@@ -75,11 +93,27 @@ class Memory:
             self.probabilistic_adjacent_row_activation(row)
 
     def target_row_refresh(self, row):
-        self.__trr_access_count_lookup__[row] += 1
-        if self.__trr_threshold__ <= self.__trr_access_count_lookup__[row]:
-            self.refresh_row(row)
-            self.__trr_access_count_lookup__[row] = 0
-            print("Target Row Refresh on ", row)
+        self.increment_trr_lookup(row)
+        if row == 0:
+            if self.__trr_threshold__ <= self.__trr_access_count_lookup__[row + 1]:
+                self.__trr_access_count_lookup__[row + 1] = 0
+                self.refresh_row(row + 1)
+                print("Target Row Refresh on row", row + 1)
+        elif row == self.__size__ - 1:
+            if self.__trr_threshold__ <= self.__trr_access_count_lookup__[row - 1]:
+                self.__trr_access_count_lookup__[row - 1] = 0
+                self.refresh_row(row - 1)
+                print("Target Row Refresh on row", row - 1)
+        else:
+            if self.__trr_threshold__ <= self.__trr_access_count_lookup__[row + 1]:
+                self.__trr_access_count_lookup__[row + 1] = 0
+                self.refresh_row(row + 1)
+                print("Target Row Refresh on row", row + 1)
+
+            if self.__trr_threshold__ <= self.__trr_access_count_lookup__[row - 1]:
+                self.__trr_access_count_lookup__[row - 1] = 0
+                self.refresh_row(row - 1)
+                print("Target Row Refresh on row", row - 1)
 
     def probabilistic_adjacent_row_activation(self, row):
         if random.random() <= self.__para_probability__:
@@ -94,7 +128,7 @@ class Memory:
             row.did_flip = False
 
     def refresh_row(self, row):
-        self.__memory__[row].refresh()
+        self.__memory__[row].did_flip = False
 
     def refresh_row_from_snapshot(self, row):  # Returns True if the refresh was successful
         refreshed = self.__memory__[row].did_flip != self.__memory_snapshot__[row].did_flip
@@ -104,11 +138,28 @@ class Memory:
     def get_adjacent_access_count(self, row):
         adjacent_access_count = 0
         if row == 0:
-            adjacent_access_count = self.__memory__[row + 1].get_access_count()
+            adjacent_access_count = self.__memory__[row + 1].left_access_count
         elif row == self.__size__ - 1:
-            adjacent_access_count = self.__memory__[row - 1].get_access_count()
+            adjacent_access_count = self.__memory__[row - 1].right_access_count
         else:
-            adjacent_access_count = (self.__memory__[row - 1].get_access_count()
-                                     + self.__memory__[row + 1].get_access_count())
+            adjacent_access_count = (self.__memory__[row + 1].left_access_count
+                                     + self.__memory__[row - 1].right_access_count)
         return adjacent_access_count
 
+    def reset_adjacent_access_count(self, row):
+        if row == 0:
+            self.__memory__[row + 1].left_access_count = 0
+        elif row == self.__size__ - 1:
+            self.__memory__[row - 1].right_access_count = 0
+        else:
+            self.__memory__[row + 1].left_access_count = 0
+            self.__memory__[row - 1].right_access_count = 0
+
+    def increment_trr_lookup(self, row):
+        if row == 0:
+            self.__trr_access_count_lookup__[row + 1] += 1
+        elif row == self.__size__ - 1:
+            self.__trr_access_count_lookup__[row - 1] += 1
+        else:
+            self.__trr_access_count_lookup__[row + 1] += 1
+            self.__trr_access_count_lookup__[row - 1] += 1
