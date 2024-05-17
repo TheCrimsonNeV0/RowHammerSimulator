@@ -1,45 +1,48 @@
-import threading
-import time
+import random
+import numpy as np
 
-# Initialize the shared list with length 10 and all values 0
-shared_list = [0] * 10
+# Constants
+MEMORY_SIZE = 64 * 1024  # Simulated memory size: 64KB
+ROW_SIZE = 256  # Simulated row size: 256 bytes
+HAMMER_COUNT = 100000  # Number of accesses to hammer a row
 
-# Lock for synchronizing access to the shared list
-lock = threading.Lock()
+# Initialize memory with zeros
+memory = np.zeros(MEMORY_SIZE, dtype=np.uint8)
 
-def flip_to_1():
-    while True:
-        time.sleep(5)
-        with lock:
-            shared_list[0] = 1
+def hammer_row(memory, row_index, hammer_count):
+    start = row_index * ROW_SIZE
+    end = start + ROW_SIZE
+    for _ in range(hammer_count):
+        for i in range(start, end):
+            memory[i] = memory[i] ^ 1  # Simulate a memory access and potential bit flip
 
-def flip_to_0():
-    while True:
-        time.sleep(3)
-        with lock:
-            shared_list[0] = 0
-
-def print_list():
-    while True:
-        time.sleep(1)
-        with lock:
-            print(shared_list)
+def check_bit_flips(memory):
+    bit_flips = 0
+    for i in range(MEMORY_SIZE):
+        if memory[i] != 0:
+            bit_flips += 1
+            print(f"Bit flip detected at byte {i}")
+    return bit_flips
 
 def main():
-    # Create the threads
-    t1 = threading.Thread(target=flip_to_1)
-    t2 = threading.Thread(target=flip_to_0)
-    t3 = threading.Thread(target=print_list)
+    # Hammer adjacent rows (e.g., rows 1 and 3 to affect row 2)
+    hammer_row(memory, 1, HAMMER_COUNT)
+    hammer_row(memory, 3, HAMMER_COUNT)
 
-    # Start the threads
-    t1.start()
-    t2.start()
-    t3.start()
+    # Check for bit flips in the victim row (e.g., row 2)
+    victim_row_start = 2 * ROW_SIZE
+    victim_row_end = victim_row_start + ROW_SIZE
+    victim_row_flips = 0
 
-    # Join the threads (optional, in this case it keeps the main thread alive)
-    t1.join()
-    t2.join()
-    t3.join()
+    for i in range(victim_row_start, victim_row_end):
+        if memory[i] != 0:
+            victim_row_flips += 1
+            print(f"Bit flip detected in victim row at byte {i}")
+
+    if victim_row_flips:
+        print(f"RowHammer attack simulated: {victim_row_flips} bit flips detected in victim row!")
+    else:
+        print("No bit flips detected in the victim row.")
 
 if __name__ == "__main__":
     main()

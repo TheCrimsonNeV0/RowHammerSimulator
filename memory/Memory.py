@@ -122,6 +122,16 @@ class Memory:
                 print("Target Row Refresh on row", row - 1)
 
     def probabilistic_adjacent_row_activation(self, row):
+        random_value = random.random()
+        if random_value <= self.__para_probability__:
+            if row == 0:
+                self.refresh_row(row + 1)
+            elif row == self.__size__ - 1:
+                self.refresh_row(row - 1)
+            else:
+                self.refresh_row(row + 1)
+                self.refresh_row(row - 1)
+
         if random.random() <= self.__para_probability__:
             self.refresh_row(row)
             print("Probabilistic Adjacent Row Activation on ", row)
