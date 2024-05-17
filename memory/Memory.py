@@ -1,6 +1,7 @@
 import copy
 import random
 
+import Configurations
 from memory.MemoryCell import MemoryCell
 
 
@@ -9,7 +10,9 @@ class Memory:
     __memory_snapshot__ = []
     __trr_access_count_lookup__ = []
 
-    def __init__(self, size, flip_threshold, trr_enabled=False, trr_threshold=0, para_enabled=False, para_probability=0):
+    def __init__(self, size=Configurations.MEMORY_SIZE, flip_threshold=Configurations.FLIP_THRESHOLD,
+                 trr_enabled=Configurations.TRR_ENABLED, trr_threshold=Configurations.TRR_THRESHOLD,
+                 para_enabled=Configurations.PARA_ENABLED, para_probability=Configurations.PARA_PROBABILITY):
         self.__size__ = size
         self.__flip_threshold__ = flip_threshold
         self.trr_enabled = trr_enabled

@@ -9,7 +9,7 @@ FLIP_THRESHOLD = 1000000
 
 class ListEditor:
     def __init__(self):
-        self.memory = Memory(MEMORY_SIZE, FLIP_THRESHOLD, True, 1000, True, 0.05)
+        self.memory = Memory()
         self.lock = threading.Lock()
 
     def edit_list(self, editor_name):
@@ -18,7 +18,7 @@ class ListEditor:
                 self.memory.access(10)
                 self.memory.access(12)
             elif editor_name == "display":
-                print("Access Count: " + str(self.memory.get_access_count(10)) + " "
+                print("Access Count: " + str(self.memory.get_access_count(10) + self.memory.get_access_count(12)) + " "
                       + str(self.memory.get_memory()[11].did_flip))
 
 
