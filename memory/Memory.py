@@ -10,6 +10,8 @@ class Memory:
     __memory_snapshot__ = []
     __trr_access_count_lookup__ = []
 
+    time_in_ns = 0
+
     def __init__(self, size=Configurations.MEMORY_SIZE, flip_threshold=Configurations.FLIP_THRESHOLD,
                  trr_enabled=Configurations.TRR_ENABLED, trr_threshold=Configurations.TRR_THRESHOLD,
                  para_enabled=Configurations.PARA_ENABLED, para_probability=Configurations.PARA_PROBABILITY):
@@ -60,6 +62,8 @@ class Memory:
             self.__memory__[row + 1].left_access_count += 1
             self.__memory__[row - 1].right_access_count += 1
 
+            self.time_in_ns += random.randint(50, 100)  # Access time
+
         # Simulation operations
         if row == 0:
             if self.__flip_threshold__ <= self.__memory__[row + 1].left_access_count + self.__memory__[row + 1].right_access_count and not self.__memory__[row + 1].did_flip:
@@ -87,10 +91,12 @@ class Memory:
         # Target Row Refresh
         if self.trr_enabled:
             self.target_row_refresh(row)
+            self.time_in_ns += random.randint(2, 5)  # TRR Lookup
 
         # Probabilistic Adjacent Row Activation
         if self.para_enabled:
             self.probabilistic_adjacent_row_activation(row)
+            self.time_in_ns += random.randint(1, 2)  # PARA Probability
 
     def target_row_refresh(self, row):
         self.increment_trr_lookup(row)
@@ -129,6 +135,7 @@ class Memory:
 
     def refresh_row(self, row):
         self.__memory__[row].did_flip = False
+        self.time_in_ns += random.randint(5, 10)
 
     def refresh_row_from_snapshot(self, row):  # Returns True if the refresh was successful
         refreshed = self.__memory__[row].did_flip != self.__memory_snapshot__[row].did_flip
