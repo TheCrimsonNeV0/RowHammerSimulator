@@ -2,6 +2,7 @@ import copy
 import random
 
 import Configurations
+from enumarations import Enumarations, OperationTimes
 from memory.MemoryCell import MemoryCell
 
 
@@ -67,7 +68,7 @@ class Memory:
             self.memory[row + 1].left_access_count += 1
             self.memory[row - 1].right_access_count += 1
 
-            self.time_in_ns += random.randint(50, 100)  # Access time
+            self.increment_time(Enumarations.MEMORY_ACCESS)
 
         # Simulation operations
         if row == 0:
@@ -107,12 +108,12 @@ class Memory:
         # Target Row Refresh
         if self.trr_enabled:
             self.target_row_refresh(row)
-            self.time_in_ns += random.randint(2, 5)  # TRR Lookup
+            self.increment_time(Enumarations.TRR_LOOKUP)
 
         # Probabilistic Adjacent Row Activation
         if self.para_enabled:
             self.probabilistic_adjacent_row_activation(row)
-            self.time_in_ns += random.randint(1, 2)  # PARA Probability
+            self.increment_time(Enumarations.PARA_CALCULATE_PROBABILITY)
 
     def target_row_refresh(self, row):
         self.increment_trr_lookup(row)
@@ -174,7 +175,7 @@ class Memory:
 
     def refresh_row(self, row):
         self.memory[row].did_flip = False
-        self.time_in_ns += random.randint(5, 10)
+        self.increment_time(Enumarations.MEMORY_ACCESS)
 
     def refresh_row_from_snapshot(self, row):  # Returns True if the refresh was successful
         refreshed = self.memory[row].did_flip != self.memory_snapshot[row].did_flip
@@ -201,3 +202,13 @@ class Memory:
         else:
             self.trr_access_count_lookup[row + 1] += 1
             self.trr_access_count_lookup[row - 1] += 1
+
+    def increment_time(self, operation):
+        if operation == Enumarations.MEMORY_ACCESS:
+            self.time_in_ns += random.randint(OperationTimes.MEMORY_ACCESS_LOW, OperationTimes.MEMORY_ACCESS_HIGH)
+        elif operation == Enumarations.REFRESH:
+            self.time_in_ns += random.randint(OperationTimes.REFRESH_LOW, OperationTimes.REFRESH_HIGH)
+        elif operation == Enumarations.TRR_LOOKUP:
+            self.time_in_ns += random.randint(OperationTimes.TRR_LOOKUP_LOW, OperationTimes.TRR_LOOKUP_HIGH)
+        elif operation == Enumarations.PARA_CALCULATE_PROBABILITY:
+            self.time_in_ns += random.randint(OperationTimes.PARA_PROBABILITY_CALCULATION_LOW, OperationTimes.PARA_PROBABILITY_CALCULATION_HIGH)
