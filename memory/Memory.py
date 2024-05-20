@@ -6,86 +6,102 @@ from memory.MemoryCell import MemoryCell
 
 
 class Memory:
-    __memory__ = []
-    __memory_snapshot__ = []
-    __trr_access_count_lookup__ = []
+    memory = []
+    memory_snapshot = []
+    trr_access_count_lookup = []
 
     time_in_ns = 0
 
-    def __init__(self, size=Configurations.MEMORY_SIZE, flip_threshold=Configurations.FLIP_THRESHOLD,
-                 trr_enabled=Configurations.TRR_ENABLED, trr_threshold=Configurations.TRR_THRESHOLD,
-                 para_enabled=Configurations.PARA_ENABLED, para_probability=Configurations.PARA_PROBABILITY):
-        self.__size__ = size
-        self.__flip_threshold__ = flip_threshold
+    def __init__(self, size=Configurations.MEMORY_SIZE,
+                 flip_threshold_first=Configurations.FLIP_THRESHOLD_FIRST,
+                 flip_threshold_last=Configurations.FLIP_THRESHOLD_LAST,
+                 trr_enabled=Configurations.TRR_ENABLED,
+                 trr_threshold=Configurations.TRR_THRESHOLD,
+                 para_enabled=Configurations.PARA_ENABLED,
+                 para_probability=Configurations.PARA_PROBABILITY):
+        self.size = size
+        self.flip_threshold_first = flip_threshold_first
+        self.flip_threshold_last = flip_threshold_last
         self.trr_enabled = trr_enabled
-        self.__trr_threshold__ = trr_threshold
+        self.trr_threshold = trr_threshold
         self.para_enabled = para_enabled
-        self.__para_probability__ = para_probability
+        self.para_probability = para_probability
 
-        self.__memory__ = []
+        self.memory = []
         for i in range(size):
-            self.__memory__.append(MemoryCell(0))
-            self.__memory_snapshot__.append(MemoryCell(0))
+            self.memory.append(MemoryCell(0))
+            self.memory_snapshot.append(MemoryCell(0))
 
-        self.__trr_access_count_lookup__ = []
+        self.trr_access_count_lookup = []
         for i in range(size):
-            self.__trr_access_count_lookup__.append(0)
+            self.trr_access_count_lookup.append(0)
 
     def get_access_count(self, row):
-        return self.__memory__[row].access_count
+        return self.memory[row].access_count
 
     def get_memory(self):
-        return self.__memory__
+        return self.memory
 
     def get_memory_copy(self):
-        return copy.deepcopy(self.__memory__)
+        return copy.deepcopy(self.memory)
 
     def get_memory_size(self):
-        return len(self.__size__)
+        return len(self.size)
 
     def take_snapshot(self):
-        for row in range(len(self.__memory__)):
-            self.__memory_snapshot__[row] = self.__memory__[row]
+        for row in range(len(self.memory)):
+            self.memory_snapshot[row] = self.memory[row]
 
     def load_snapshot(self):
-        for row in range(len(self.__memory__)):
-            self.__memory__[row].did_flip = self.__memory_snapshot__[row].did_flip
+        for row in range(len(self.memory)):
+            self.memory[row].did_flip = self.memory_snapshot[row].did_flip
 
     def access(self, row):
-        self.__memory__[row].access()
+        self.memory[row].access()
 
         if row == 0:
-            self.__memory__[row + 1].left_access_count += 1
-        elif row == self.__size__ - 1:
-            self.__memory__[row - 1].right_access_count += 1
+            self.memory[row + 1].left_access_count += 1
+        elif row == self.size - 1:
+            self.memory[row - 1].right_access_count += 1
         else:
-            self.__memory__[row + 1].left_access_count += 1
-            self.__memory__[row - 1].right_access_count += 1
+            self.memory[row + 1].left_access_count += 1
+            self.memory[row - 1].right_access_count += 1
 
             self.time_in_ns += random.randint(50, 100)  # Access time
 
         # Simulation operations
         if row == 0:
-            if self.__flip_threshold__ <= self.__memory__[row + 1].left_access_count + self.__memory__[row + 1].right_access_count and not self.__memory__[row + 1].did_flip:
-                self.__memory__[row + 1].flip()
-                self.__memory__[row + 1].left_access_count = 0
-                self.__memory__[row + 1].right_access_count = 0
-        elif row == self.__size__ - 1:
-            if self.__flip_threshold__ <= self.__memory__[row - 1].left_access_count + self.__memory__[row - 1].right_access_count and not self.__memory__[row - 1].did_flip:
-                self.__memory__[row - 1].flip()
-                self.__memory__[row - 1].left_access_count = 0
-                self.__memory__[row - 1].right_access_count = 0
-        else:
-            if self.__flip_threshold__ <= self.__memory__[row + 1].left_access_count + self.__memory__[row + 1].right_access_count and not self.__memory__[row + 1].did_flip:
-                self.__memory__[row + 1].flip()
-                self.__memory__[row + 1].left_access_count = 0
-                self.__memory__[row + 1].right_access_count = 0
+            if self.flip_threshold_first <= self.get_adjacent_access_count(row + 1) and not self.memory[row + 1].did_flip:
+                if self.should_flip_probabilistic(row + 1):
+                    self.memory[row + 1].flip()
+                    self.memory[row + 1].left_access_count = 0
+                    self.memory[row + 1].right_access_count = 0
 
-            if self.__flip_threshold__ <= self.__memory__[row - 1].left_access_count + self.__memory__[
-                row - 1].right_access_count and not self.__memory__[row - 1].did_flip:
-                self.__memory__[row - 1].flip()
-                self.__memory__[row - 1].left_access_count = 0
-                self.__memory__[row - 1].right_access_count = 0
+                    print('Bit flip on ' + str(row + 1))
+        elif row == self.size - 1:
+            if self.flip_threshold_first <= self.get_adjacent_access_count(row - 1) and not self.memory[row - 1].did_flip:
+                if self.should_flip_probabilistic(row - 1):
+                    self.memory[row - 1].flip()
+                    self.memory[row - 1].left_access_count = 0
+                    self.memory[row - 1].right_access_count = 0
+
+                    print('Bit flip on ' + str(row - 1))
+        else:
+            if self.flip_threshold_first <= self.get_adjacent_access_count(row + 1) and not self.memory[row + 1].did_flip:
+                if self.should_flip_probabilistic(row + 1):
+                    self.memory[row + 1].flip()
+                    self.memory[row + 1].left_access_count = 0
+                    self.memory[row + 1].right_access_count = 0
+
+                    print('Bit flip on ' + str(row + 1))
+
+            if self.flip_threshold_first <= self.get_adjacent_access_count(row - 1) and not self.memory[row - 1].did_flip:
+                if self.should_flip_probabilistic(row - 1):
+                    self.memory[row - 1].flip()
+                    self.memory[row - 1].left_access_count = 0
+                    self.memory[row - 1].right_access_count = 0
+
+                    print('Bit flip on ' + str(row - 1))
 
         # Mitigation operations
         # Target Row Refresh
@@ -101,82 +117,87 @@ class Memory:
     def target_row_refresh(self, row):
         self.increment_trr_lookup(row)
         if row == 0:
-            if self.__trr_threshold__ <= self.__trr_access_count_lookup__[row + 1]:
-                self.__trr_access_count_lookup__[row + 1] = 0
+            if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
+                self.trr_access_count_lookup[row + 1] = 0
                 self.refresh_row(row + 1)
-                print("Target Row Refresh on row", row + 1)
-        elif row == self.__size__ - 1:
-            if self.__trr_threshold__ <= self.__trr_access_count_lookup__[row - 1]:
-                self.__trr_access_count_lookup__[row - 1] = 0
+                print('Target Row Refresh on row', row + 1)
+        elif row == self.size - 1:
+            if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
+                self.trr_access_count_lookup[row - 1] = 0
                 self.refresh_row(row - 1)
-                print("Target Row Refresh on row", row - 1)
+                print('Target Row Refresh on row', row - 1)
         else:
-            if self.__trr_threshold__ <= self.__trr_access_count_lookup__[row + 1]:
-                self.__trr_access_count_lookup__[row + 1] = 0
+            if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
+                self.trr_access_count_lookup[row + 1] = 0
                 self.refresh_row(row + 1)
-                print("Target Row Refresh on row", row + 1)
+                print('Target Row Refresh on row', row + 1)
 
-            if self.__trr_threshold__ <= self.__trr_access_count_lookup__[row - 1]:
-                self.__trr_access_count_lookup__[row - 1] = 0
+            if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
+                self.trr_access_count_lookup[row - 1] = 0
                 self.refresh_row(row - 1)
-                print("Target Row Refresh on row", row - 1)
+                print('Target Row Refresh on row', row - 1)
 
     def probabilistic_adjacent_row_activation(self, row):
         random_value = random.random()
-        if random_value <= self.__para_probability__:
+        if random_value <= self.para_probability:
             if row == 0:
                 self.refresh_row(row + 1)
-            elif row == self.__size__ - 1:
+            elif row == self.size - 1:
                 self.refresh_row(row - 1)
             else:
                 self.refresh_row(row + 1)
                 self.refresh_row(row - 1)
 
-        if random.random() <= self.__para_probability__:
+        if random.random() <= self.para_probability:
             self.refresh_row(row)
-            print("Probabilistic Adjacent Row Activation on ", row)
+            print('Probabilistic Adjacent Row Activation on ', row)
+
+    def should_flip_probabilistic(self, row):
+        # This section uses the calculation function proposed in Hammulator
+
+        adjacent_access_count = self.get_adjacent_access_count(row)
+        random_value = random.random()
+        probability_threshold = (adjacent_access_count - self.flip_threshold_first) / (self.flip_threshold_last - self.flip_threshold_first)
+
+        if random_value <= probability_threshold:
+            return True
+        else:
+            return False
 
     def flip(self, row):
-        self.__memory__[row].flip()
+        self.memory[row].flip()
+        print("Bit flip on row " + str(row))
 
     def refresh(self):
-        for row in self.__memory__:
+        for row in self.memory:
             row.did_flip = False
 
     def refresh_row(self, row):
-        self.__memory__[row].did_flip = False
+        self.memory[row].did_flip = False
         self.time_in_ns += random.randint(5, 10)
 
     def refresh_row_from_snapshot(self, row):  # Returns True if the refresh was successful
-        refreshed = self.__memory__[row].did_flip != self.__memory_snapshot__[row].did_flip
-        self.__memory__[row].did_flip = self.__memory_snapshot__[row].did_flip
+        refreshed = self.memory[row].did_flip != self.memory_snapshot[row].did_flip
+        self.memory[row].did_flip = self.memory_snapshot[row].did_flip
         return refreshed
 
     def get_adjacent_access_count(self, row):
-        adjacent_access_count = 0
-        if row == 0:
-            adjacent_access_count = self.__memory__[row + 1].left_access_count
-        elif row == self.__size__ - 1:
-            adjacent_access_count = self.__memory__[row - 1].right_access_count
-        else:
-            adjacent_access_count = (self.__memory__[row + 1].left_access_count
-                                     + self.__memory__[row - 1].right_access_count)
-        return adjacent_access_count
+        return self.memory[row].left_access_count + self.memory[row].right_access_count
 
     def reset_adjacent_access_count(self, row):
         if row == 0:
-            self.__memory__[row + 1].left_access_count = 0
-        elif row == self.__size__ - 1:
-            self.__memory__[row - 1].right_access_count = 0
+            self.memory[row + 1].left_access_count = 0
+        elif row == self.size - 1:
+            self.memory[row - 1].right_access_count = 0
         else:
-            self.__memory__[row + 1].left_access_count = 0
-            self.__memory__[row - 1].right_access_count = 0
+            self.memory[row + 1].left_access_count = 0
+            self.memory[row - 1].right_access_count = 0
 
     def increment_trr_lookup(self, row):
         if row == 0:
-            self.__trr_access_count_lookup__[row + 1] += 1
-        elif row == self.__size__ - 1:
-            self.__trr_access_count_lookup__[row - 1] += 1
+            self.trr_access_count_lookup[row + 1] += 1
+        elif row == self.size - 1:
+            self.trr_access_count_lookup[row - 1] += 1
         else:
-            self.__trr_access_count_lookup__[row + 1] += 1
-            self.__trr_access_count_lookup__[row - 1] += 1
+            self.trr_access_count_lookup[row + 1] += 1
+            self.trr_access_count_lookup[row - 1] += 1

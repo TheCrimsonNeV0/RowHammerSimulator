@@ -10,19 +10,20 @@ class Controller:
 
     def edit_list(self, editor_name):
         with self.lock:
-            if editor_name == "hammer":
+            if editor_name == 'hammer':
                 self.memory.access(3)
                 self.memory.access(5)
-            elif editor_name == "display":
-                print("Time passed:", self.memory.time_in_ns, "ns")
+            elif editor_name == 'display':
+                print('Time passed: ' + str(self.memory.time_in_ns), 'ns')
+                print('Adjacent access count of victim: ' + str(self.memory.get_adjacent_access_count(4)) + '\n')
 
 def hammer(list_editor):  # Simulate hammering behavior
-    list_editor.edit_list("hammer")
+    list_editor.edit_list('hammer')
     threading.Timer(0.01, hammer, args=(list_editor,)).start()
 
 
 def display(list_editor):
-    list_editor.edit_list("display")
+    list_editor.edit_list('display')
     threading.Timer(2, display, args=(list_editor,)).start()
 
 
