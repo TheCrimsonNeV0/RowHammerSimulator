@@ -77,32 +77,23 @@ class Memory:
                     self.memory[row + 1].flip()
                     self.memory[row + 1].left_access_count = 0
                     self.memory[row + 1].right_access_count = 0
-
-                    print('Bit flip on ' + str(row + 1))
         elif row == self.size - 1:
             if self.flip_threshold_first <= self.get_adjacent_access_count(row - 1) and not self.memory[row - 1].did_flip:
                 if self.should_flip_probabilistic(row - 1):
                     self.memory[row - 1].flip()
                     self.memory[row - 1].left_access_count = 0
                     self.memory[row - 1].right_access_count = 0
-
-                    print('Bit flip on ' + str(row - 1))
         else:
             if self.flip_threshold_first <= self.get_adjacent_access_count(row + 1) and not self.memory[row + 1].did_flip:
                 if self.should_flip_probabilistic(row + 1):
                     self.memory[row + 1].flip()
                     self.memory[row + 1].left_access_count = 0
                     self.memory[row + 1].right_access_count = 0
-
-                    print('Bit flip on ' + str(row + 1))
-
             if self.flip_threshold_first <= self.get_adjacent_access_count(row - 1) and not self.memory[row - 1].did_flip:
                 if self.should_flip_probabilistic(row - 1):
                     self.memory[row - 1].flip()
                     self.memory[row - 1].left_access_count = 0
                     self.memory[row - 1].right_access_count = 0
-
-                    print('Bit flip on ' + str(row - 1))
 
         # Mitigation operations
         # Target Row Refresh
@@ -113,7 +104,7 @@ class Memory:
         # Probabilistic Adjacent Row Activation
         if self.para_enabled:
             self.probabilistic_adjacent_row_activation(row)
-            self.increment_time(Enumarations.PARA_CALCULATE_PROBABILITY)
+            self.increment_time(Enumarations.PARA_CHECK_PROBABILITY)
 
     def target_row_refresh(self, row):
         self.increment_trr_lookup(row)
@@ -121,22 +112,22 @@ class Memory:
             if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
                 self.trr_access_count_lookup[row + 1] = 0
                 self.refresh_row(row + 1)
-                print('Target Row Refresh on row', row + 1)
+                self.log_output(row + 1, Enumarations.TRR_REFRESH)
         elif row == self.size - 1:
             if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
                 self.trr_access_count_lookup[row - 1] = 0
                 self.refresh_row(row - 1)
-                print('Target Row Refresh on row', row - 1)
+                self.log_output(row - 1, Enumarations.TRR_REFRESH)
         else:
             if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
                 self.trr_access_count_lookup[row + 1] = 0
                 self.refresh_row(row + 1)
-                print('Target Row Refresh on row', row + 1)
+                self.log_output(row + 1, Enumarations.TRR_REFRESH)
 
             if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
                 self.trr_access_count_lookup[row - 1] = 0
                 self.refresh_row(row - 1)
-                print('Target Row Refresh on row', row - 1)
+                self.log_output(row - 1, Enumarations.TRR_REFRESH)
 
     def probabilistic_adjacent_row_activation(self, row):
         random_value = random.random()
@@ -151,7 +142,7 @@ class Memory:
 
         if random.random() <= self.para_probability:
             self.refresh_row(row)
-            print('Probabilistic Adjacent Row Activation on ', row)
+            self.log_output(row, Enumarations.PARA_ROW_ACTIVATION)
 
     def should_flip_probabilistic(self, row):
         # This section uses the calculation function proposed in Hammulator
@@ -167,11 +158,7 @@ class Memory:
 
     def flip(self, row):
         self.memory[row].flip()
-        print("Bit flip on row " + str(row))
-
-    def refresh(self):
-        for row in self.memory:
-            row.did_flip = False
+        self.log_output(row, Enumarations.BIT_FLIP)
 
     def refresh_row(self, row):
         self.memory[row].did_flip = False
@@ -210,5 +197,18 @@ class Memory:
             self.time_in_ns += random.randint(OperationTimes.REFRESH_LOW, OperationTimes.REFRESH_HIGH)
         elif operation == Enumarations.TRR_LOOKUP:
             self.time_in_ns += random.randint(OperationTimes.TRR_LOOKUP_LOW, OperationTimes.TRR_LOOKUP_HIGH)
-        elif operation == Enumarations.PARA_CALCULATE_PROBABILITY:
-            self.time_in_ns += random.randint(OperationTimes.PARA_PROBABILITY_CALCULATION_LOW, OperationTimes.PARA_PROBABILITY_CALCULATION_HIGH)
+        elif operation == Enumarations.PARA_CHECK_PROBABILITY:
+            self.time_in_ns += random.randint(OperationTimes.PARA_PROBABILITY_CHECK_LOW, OperationTimes.PARA_PROBABILITY_CHECK_HIGH)
+
+    def log_output(self, row, operation):
+        if operation == Enumarations.MEMORY_ACCESS:
+            print('Memory access: ' + str(row))
+        elif operation == Enumarations.BIT_FLIP:
+            print('Bit flip: ' + str(row + 1))
+        elif operation == Enumarations.REFRESH:
+            print('Refresh: ' + str(row))
+        elif operation == Enumarations.TRR_REFRESH:
+            print('Target Row Refresh: ' + str(row))
+        elif operation == Enumarations.PARA_ROW_ACTIVATION:
+            print('Probabilistic Adjacent Row Activation: ' + str(row))
+

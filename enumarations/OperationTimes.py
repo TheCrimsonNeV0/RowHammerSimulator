@@ -1,11 +1,21 @@
-MEMORY_ACCESS_LOW = 50
-MEMORY_ACCESS_HIGH = 100
+#  Documentation:
+#  JEDEC Standards
+#  Research Papers on RowHammer Mitigations
+#  Technical Documentation from DRAM Manufacturers (Micron, Samsung, Hynix...)
 
-REFRESH_LOW = 5
-REFRESH_HIGH = 10
+#  Timings are given as nanoseconds
 
-TRR_LOOKUP_LOW = 2
-TRR_LOOKUP_HIGH = 5
+MEMORY_ACCESS_LOW = 29  # Without any mitigation method delays
+MEMORY_ACCESS_HIGH = 30  # Without any mitigation method delays
 
-PARA_PROBABILITY_CALCULATION_LOW = 1
-PARA_PROBABILITY_CALCULATION_HIGH = 2
+REFRESH_LOW = 350  # DDR4 Standard
+REFRESH_HIGH = 414  # DDR4 Standard (with 64ns additional delay)
+
+TRR_LOOKUP_LOW = 10
+TRR_LOOKUP_HIGH = 20
+
+PARA_PROBABILITY_CHECK_LOW = 1
+PARA_PROBABILITY_CHECK_HIGH = 5
+
+ARAR_CALCULATE_PROBABILITY_LOW = 1
+ARAR_CALCULATE_PROBABILITY_HIGH = 5
