@@ -74,24 +74,24 @@ class Memory:
         if row == 0:
             if self.flip_threshold_first <= self.get_adjacent_access_count(row + 1) and not self.memory[row + 1].did_flip:
                 if self.should_flip_probabilistic(row + 1):
-                    self.memory[row + 1].flip()
+                    self.flip(row + 1)
                     self.memory[row + 1].left_access_count = 0
                     self.memory[row + 1].right_access_count = 0
         elif row == self.size - 1:
             if self.flip_threshold_first <= self.get_adjacent_access_count(row - 1) and not self.memory[row - 1].did_flip:
                 if self.should_flip_probabilistic(row - 1):
-                    self.memory[row - 1].flip()
+                    self.flip(row - 1)
                     self.memory[row - 1].left_access_count = 0
                     self.memory[row - 1].right_access_count = 0
         else:
             if self.flip_threshold_first <= self.get_adjacent_access_count(row + 1) and not self.memory[row + 1].did_flip:
                 if self.should_flip_probabilistic(row + 1):
-                    self.memory[row + 1].flip()
+                    self.flip(row + 1)
                     self.memory[row + 1].left_access_count = 0
                     self.memory[row + 1].right_access_count = 0
             if self.flip_threshold_first <= self.get_adjacent_access_count(row - 1) and not self.memory[row - 1].did_flip:
                 if self.should_flip_probabilistic(row - 1):
-                    self.memory[row - 1].flip()
+                    self.flip(row - 1)
                     self.memory[row - 1].left_access_count = 0
                     self.memory[row - 1].right_access_count = 0
 
@@ -145,7 +145,7 @@ class Memory:
             self.log_output(row, Enumarations.PARA_ROW_ACTIVATION)
 
     def should_flip_probabilistic(self, row):
-        # This section uses the calculation function proposed in Hammulator
+        # This section uses the calculation logic proposed in Hammulator
 
         adjacent_access_count = self.get_adjacent_access_count(row)
         random_value = random.random()
@@ -204,11 +204,10 @@ class Memory:
         if operation == Enumarations.MEMORY_ACCESS:
             print('Memory access: ' + str(row))
         elif operation == Enumarations.BIT_FLIP:
-            print('Bit flip: ' + str(row + 1))
+            print('Bit flip: ' + str(row))
         elif operation == Enumarations.REFRESH:
             print('Refresh: ' + str(row))
         elif operation == Enumarations.TRR_REFRESH:
             print('Target Row Refresh: ' + str(row))
         elif operation == Enumarations.PARA_ROW_ACTIVATION:
             print('Probabilistic Adjacent Row Activation: ' + str(row))
-

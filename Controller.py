@@ -13,7 +13,7 @@ class Controller:
             if editor_name == 'hammer':
                 self.memory.access(3)
                 self.memory.access(5)
-            elif editor_name == 'display':
+            elif editor_name == 'log':
                 print('Time passed: ' + str(self.memory.time_in_ns), 'ns')
                 print('Adjacent access count of victim: ' + str(self.memory.get_adjacent_access_count(4)) + '\n')
 
@@ -22,9 +22,9 @@ def hammer(list_editor):  # Simulate hammering behavior
     threading.Timer(0.01, hammer, args=(list_editor,)).start()
 
 
-def display(list_editor):
-    list_editor.edit_list('display')
-    threading.Timer(2, display, args=(list_editor,)).start()
+def log(list_editor):
+    list_editor.edit_list('log')
+    threading.Timer(2, log, args=(list_editor,)).start()
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
 
     # Create threads
     thread1 = threading.Thread(target=hammer, args=(list_editor,))
-    thread2 = threading.Thread(target=display, args=(list_editor,))
+    thread2 = threading.Thread(target=log, args=(list_editor,))
 
     # Start both threads
     thread1.start()
