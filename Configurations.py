@@ -6,11 +6,11 @@
 MEMORY_SIZE = 10
 
 # Should be a random value between 150,000 - 200,000
-FLIP_THRESHOLD_FIRST = 1500
-FLIP_THRESHOLD_LAST = 2000
+FLIP_THRESHOLD_FIRST = 10000  # Hammulator configuration
+FLIP_THRESHOLD_LAST = 100000  # Aggressive upper bound for quicker occurance
 
 TRR_ENABLED = False
-TRR_THRESHOLD = 1000  # 1/2 - 1/4 of the flip threshold
+TRR_THRESHOLD = 8000  # Hammulator configuration
 
 PARA_ENABLED = False
-PARA_PROBABILITY = 0.005
+PARA_PROBABILITY = 0.001  # Hammulator configuration
