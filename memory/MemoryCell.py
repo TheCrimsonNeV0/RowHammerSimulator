@@ -7,6 +7,9 @@ class MemoryCell:
         self.access_count = access_count
         self.did_flip = False
 
+        self.flip_count = 0
+        self.refresh_count = 0
+
     def get_access_count(self):
         return self.access_count
 
@@ -18,9 +21,11 @@ class MemoryCell:
 
     def flip(self):
         self.did_flip = True
+        self.flip_count += 1
 
     def refresh(self):
         self.did_flip = False
+        self.refresh_count += 1
 
     def increment_left_adjacent_access_count(self):
         self.left_access_count += 1

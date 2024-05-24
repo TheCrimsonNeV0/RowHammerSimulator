@@ -14,12 +14,12 @@ AGGRESSOR_ROW_TWO = 5
 ITERATION_LIMIT = 120
 
 
-class Controller_NoMitigation:
+class Controller_ProbabilisticAdjacentRowActivation:
     def __init__(self, writer, stop_event):
         self.memory = Memory(Configurations.MEMORY_SIZE,
                              Configurations.FLIP_THRESHOLD_FIRST,
                              Configurations.FLIP_THRESHOLD_LAST,
-                             False, 0, False, 0)
+                             False, 0, True, Configurations.PARA_PROBABILITY)
         self.lock = threading.Lock()
         self.writer = writer
         self.stop_event = stop_event
@@ -39,9 +39,10 @@ class Controller_NoMitigation:
 
                 simulation_time = self.memory.time_in_ns
                 adjacent_access_count = self.memory.get_adjacent_access_count(VICTIM_ROW)
+                para_count = self.memory.para_row_activation_count
                 flip_count = self.memory.memory[VICTIM_ROW].flip_count
 
-                self.writer.writerow([self.iteration_count, simulation_time, adjacent_access_count, flip_count])
+                self.writer.writerow([self.iteration_count, simulation_time, adjacent_access_count, para_count, flip_count])
                 self.iteration_count += 1
             return True
 
@@ -57,13 +58,13 @@ def log(controller, stop_event):
 
 
 def main():
-    fields = ['real_time', 'simulation_time_ns', 'adjacent_access_count_of_victim', 'flip_count']
-    file = open('../outputs/output_no_mitigation.csv', 'w', newline='')
+    fields = ['real_time', 'simulation_time_ns', 'adjacent_access_count_of_victim', 'para_count', 'flip_count']
+    file = open('../outputs/output_probabilistic_adjacent_row_activation.csv', 'w', newline='')
     writer = csv.writer(file)
     writer.writerow(fields)
 
     stop_event = threading.Event()
-    controller = Controller_NoMitigation(writer, stop_event)
+    controller = Controller_ProbabilisticAdjacentRowActivation(writer, stop_event)
 
     # Create threads
     thread1 = threading.Thread(target=hammer, args=(controller, stop_event))

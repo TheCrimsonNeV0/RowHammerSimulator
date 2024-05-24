@@ -12,8 +12,6 @@ class Memory:
     memory_snapshot = []
     trr_access_count_lookup = []
 
-    time_in_ns = 0
-
     def __init__(self, size=Configurations.MEMORY_SIZE,
                  flip_threshold_first=Configurations.FLIP_THRESHOLD_FIRST,
                  flip_threshold_last=Configurations.FLIP_THRESHOLD_LAST,
@@ -28,6 +26,10 @@ class Memory:
         self.trr_threshold = trr_threshold
         self.para_enabled = para_enabled
         self.para_probability = para_probability
+
+        self.time_in_ns = 0
+        self.trr_refresh_count = 0
+        self.para_row_activation_count = 0
 
         self.memory = []
         for i in range(size):
@@ -113,37 +115,49 @@ class Memory:
             if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
                 self.trr_access_count_lookup[row + 1] = 0
                 self.refresh_row(row + 1)
+                self.trr_refresh_count += 1
                 self.log_output(row + 1, Enumarations.TRR_REFRESH)
         elif row == self.size - 1:
             if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
                 self.trr_access_count_lookup[row - 1] = 0
                 self.refresh_row(row - 1)
+                self.trr_refresh_count += 1
                 self.log_output(row - 1, Enumarations.TRR_REFRESH)
         else:
             if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
                 self.trr_access_count_lookup[row + 1] = 0
                 self.refresh_row(row + 1)
+                self.trr_refresh_count += 1
                 self.log_output(row + 1, Enumarations.TRR_REFRESH)
 
             if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
                 self.trr_access_count_lookup[row - 1] = 0
                 self.refresh_row(row - 1)
+                self.trr_refresh_count += 1
                 self.log_output(row - 1, Enumarations.TRR_REFRESH)
 
-    def probabilistic_adjacent_row_activation(self, row):
+    def probabilistic_adjacent_row_activation(self, row):  # Uses different random values for each adjacent row
         random_value = random.random()
-        if random_value <= self.para_probability:
-            if row == 0:
-                self.refresh_row(row + 1)
-            elif row == self.size - 1:
-                self.refresh_row(row - 1)
-            else:
-                self.refresh_row(row + 1)
-                self.refresh_row(row - 1)
 
-        if random.random() <= self.para_probability:
-            self.refresh_row(row)
-            self.log_output(row, Enumarations.PARA_ROW_ACTIVATION)
+        if row == 0:
+            random_value = random.random()
+            if random_value <= self.para_probability:
+                self.refresh_row(row + 1)
+                self.para_row_activation_count += 1
+        elif row == self.size - 1:
+            random_value = random.random()
+            if random_value <= self.para_probability:
+                self.refresh_row(row - 1)
+                self.para_row_activation_count += 1
+        else:
+            random_value_next = random.random()
+            random_value_previous = random.random()
+            if random_value_next <= self.para_probability:
+                self.refresh_row(row + 1)
+                self.para_row_activation_count += 1
+            if random_value_previous <= self.para_probability:
+                self.refresh_row(row - 1)
+                self.para_row_activation_count += 1
 
     def should_flip_probabilistic(self, row):
         # This section uses the calculation logic proposed in Hammulator
@@ -162,7 +176,7 @@ class Memory:
         self.log_output(row, Enumarations.BIT_FLIP)
 
     def refresh_row(self, row):
-        self.memory[row].did_flip = False
+        self.memory[row].refresh()
         self.increment_time(Enumarations.MEMORY_ACCESS)
 
     def refresh_row_from_snapshot(self, row):  # Returns True if the refresh was successful
