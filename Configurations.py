@@ -14,3 +14,7 @@ TRR_THRESHOLD = 8000  # Hammulator configuration
 
 PARA_ENABLED = False
 PARA_PROBABILITY = 0.001  # Hammulator configuration
+
+# Custom configurations
+ARAR_PROBABILITY_LOW = 0.0001
+ARAR_PROBABILITY_HIGH = 1.0

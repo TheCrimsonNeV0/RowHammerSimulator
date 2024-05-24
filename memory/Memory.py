@@ -8,10 +8,6 @@ from memory.MemoryCell import MemoryCell
 
 
 class Memory:
-    memory = []
-    memory_snapshot = []
-    trr_access_count_lookup = []
-
     def __init__(self, size=Configurations.MEMORY_SIZE,
                  flip_threshold_first=Configurations.FLIP_THRESHOLD_FIRST,
                  flip_threshold_last=Configurations.FLIP_THRESHOLD_LAST,
@@ -32,6 +28,7 @@ class Memory:
         self.para_row_activation_count = 0
 
         self.memory = []
+        self.memory_snapshot = []
         for i in range(size):
             self.memory.append(MemoryCell(0))
             self.memory_snapshot.append(MemoryCell(0))
@@ -39,6 +36,14 @@ class Memory:
         self.trr_access_count_lookup = []
         for i in range(size):
             self.trr_access_count_lookup.append(0)
+
+        self.arar_access_count_lookup = []
+        self.arar_refresh_count_lookup = []
+        for i in range(size):
+            self.arar_access_count_lookup.append(0)
+            self.arar_refresh_count_lookup.append(0)
+        self.arar_current_probability = Configurations.ARAR_PROBABILITY_LOW
+
 
     def get_access_count(self, row):
         return self.memory[row].access_count
@@ -159,6 +164,11 @@ class Memory:
                 self.refresh_row(row - 1)
                 self.para_row_activation_count += 1
 
+    def adaptive_row_activation_and_refresh(self, row):  # Experimental Mitigation Method
+        self.increment_arar_lookup(row)
+
+        # TODO: Adapt the refresh probability depending on the access count and refresh count
+
     def should_flip_probabilistic(self, row):
         # This section uses the calculation logic proposed in Hammulator
 
@@ -207,6 +217,15 @@ class Memory:
         else:
             self.trr_access_count_lookup[row + 1] += 1
             self.trr_access_count_lookup[row - 1] += 1
+
+    def increment_arar_lookup(self, row):
+        if row == 0:
+            self.arar_access_count_lookup[row + 1] += 1
+        elif row == self.size - 1:
+            self.arar_access_count_lookup[row - 1] += 1
+        else:
+            self.arar_access_count_lookup[row + 1] += 1
+            self.arar_access_count_lookup[row - 1] += 1
 
     def increment_time(self, operation):
         if operation == Enumarations.MEMORY_ACCESS:
