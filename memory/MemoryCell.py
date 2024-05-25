@@ -35,6 +35,10 @@ class MemoryCell:
         self.right_access_count += 1
         self.adjacent_access_count += 1
 
+    def reset_adjacent_counts(self):
+        self.left_access_count = 0
+        self.right_access_count = 0
+
     def reset_left_adjacent_access_count(self):
         self.left_access_count = 0
 
