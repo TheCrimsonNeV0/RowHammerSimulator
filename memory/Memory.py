@@ -9,7 +9,6 @@ from memory.MemoryCell import MemoryCell
 
 class Memory:
     memory = []
-    memory_snapshot = []
     trr_access_count_lookup = []
 
     def __init__(self, size=Configurations.MEMORY_SIZE,
@@ -34,7 +33,6 @@ class Memory:
         self.memory = []
         for i in range(size):
             self.memory.append(MemoryCell(0))
-            self.memory_snapshot.append(MemoryCell(0))
 
         self.trr_access_count_lookup = []
         for i in range(size):
@@ -52,14 +50,6 @@ class Memory:
     def get_memory_size(self):
         return len(self.size)
 
-    def take_snapshot(self):
-        for row in range(len(self.memory)):
-            self.memory_snapshot[row] = self.memory[row]
-
-    def load_snapshot(self):
-        for row in range(len(self.memory)):
-            self.memory[row].did_flip = self.memory_snapshot[row].did_flip
-
     def access(self, row):
         self.memory[row].access()
 
@@ -71,32 +61,24 @@ class Memory:
             self.memory[row + 1].increment_left_adjacent_access_count()
             self.memory[row - 1].increment_right_adjacent_access_count()
 
-            self.increment_time(Enumarations.MEMORY_ACCESS)
+        self.increment_time(Enumarations.MEMORY_ACCESS)
 
         # Simulation operations
         if row == 0:
             if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row + 1) and not self.memory[row + 1].did_flip:
                 if self.should_flip_probabilistic(row + 1):
                     self.flip(row + 1)
-                    self.memory[row + 1].reset_left_adjacent_access_count()
-                    self.memory[row + 1].reset_right_adjacent_access_count()
         elif row == self.size - 1:
             if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row - 1) and not self.memory[row - 1].did_flip:
                 if self.should_flip_probabilistic(row - 1):
                     self.flip(row - 1)
-                    self.memory[row - 1].reset_left_adjacent_access_count()
-                    self.memory[row - 1].reset_right_adjacent_access_count()
         else:
             if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row + 1) and not self.memory[row + 1].did_flip:
                 if self.should_flip_probabilistic(row + 1):
                     self.flip(row + 1)
-                    self.memory[row + 1].reset_left_adjacent_access_count()
-                    self.memory[row + 1].reset_right_adjacent_access_count()
             if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row - 1) and not self.memory[row - 1].did_flip:
                 if self.should_flip_probabilistic(row - 1):
                     self.flip(row - 1)
-                    self.memory[row - 1].reset_left_adjacent_access_count()
-                    self.memory[row - 1].reset_right_adjacent_access_count()
 
         # Mitigation operations
         # Target Row Refresh
@@ -177,12 +159,8 @@ class Memory:
 
     def refresh_row(self, row):
         self.memory[row].refresh()
+        self.memory[row].reset_adjacent_counts()
         self.increment_time(Enumarations.MEMORY_ACCESS)
-
-    def refresh_row_from_snapshot(self, row):  # Returns True if the refresh was successful
-        refreshed = self.memory[row].did_flip != self.memory_snapshot[row].did_flip
-        self.memory[row].did_flip = self.memory_snapshot[row].did_flip
-        return refreshed
 
     def get_adjacent_access_count(self, row):
         return self.memory[row].get_adjacent_access_count()
