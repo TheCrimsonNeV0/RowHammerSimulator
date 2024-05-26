@@ -5,12 +5,15 @@
 
 MEMORY_SIZE = 10
 
+SIMULATION_SCALE = 0.3  # This value indicates the scale depending on how long the simulation will run
+                        # As the value gets closer to 1, the results will be more realistic
+
 # Should be a random value between 150,000 - 200,000
-FLIP_THRESHOLD_FIRST = 10000  # Hammulator configuration
-FLIP_THRESHOLD_LAST = 100000  # Aggressive upper bound for quicker occurance
+FLIP_THRESHOLD_FIRST = 10000 * SIMULATION_SCALE  # Hammulator configuration
+FLIP_THRESHOLD_LAST = 100000 * SIMULATION_SCALE  # Aggressive upper bound for quicker occurance
 
 TRR_ENABLED = False
-TRR_THRESHOLD = 8000  # Hammulator configuration
+TRR_THRESHOLD = 8000 * SIMULATION_SCALE  # Hammulator configuration
 
 PARA_ENABLED = False
-PARA_PROBABILITY = 0.001  # Hammulator configuration
+PARA_PROBABILITY = 0.001 / SIMULATION_SCALE  # Hammulator configuration

@@ -13,6 +13,8 @@ AGGRESSOR_ROW_ONE = 3
 AGGRESSOR_ROW_TWO = 5
 ITERATION_LIMIT = 120
 
+PATTERNS = [[1, 3], [3, 5], [5, 7], [7, 9]]
+
 
 class Controller_ProbabilisticAdjacentRowActivation:
     def __init__(self, writer, stop_event):
@@ -31,11 +33,16 @@ class Controller_ProbabilisticAdjacentRowActivation:
                 self.stop_event.set()
                 return False
 
-            if operation == 'hammer':
+            if operation == 'hammer_static':
                 self.memory.access(AGGRESSOR_ROW_ONE)
                 self.memory.access(AGGRESSOR_ROW_TWO)
+            elif operation == 'hammer_pattern':
+                pattern = PATTERNS[self.iteration_count % len(PATTERNS)]
+                self.memory.access(pattern[0])
+                self.memory.access(pattern[1])
             elif operation == 'log':
                 print('Time passed (seconds): ' + str(self.iteration_count))
+                self.memory.print_access_counts()
 
                 simulation_time = self.memory.time_in_ns
                 adjacent_access_count = self.memory.get_adjacent_access_count(VICTIM_ROW)
@@ -46,16 +53,18 @@ class Controller_ProbabilisticAdjacentRowActivation:
                 self.iteration_count += 1
             return True
 
+def hammer_static(controller, stop_event):  # Simulate hammering behavior
+    if not stop_event.is_set() and controller.edit_list('hammer_static'):
+        threading.Timer(0.01, hammer_static, args=(controller, stop_event)).start()
 
-def hammer(controller, stop_event):  # Simulate hammering behavior
-    if not stop_event.is_set() and controller.edit_list('hammer'):
-        threading.Timer(0.01, hammer, args=(controller, stop_event)).start()
+def hammer_pattern(controller, stop_event):  # Simulate hammering behavior
+    if not stop_event.is_set() and controller.edit_list('hammer_pattern'):
+        threading.Timer(0.01, hammer_pattern, args=(controller, stop_event)).start()
 
 
 def log(controller, stop_event):
     if not stop_event.is_set() and controller.edit_list('log'):
         threading.Timer(1, log, args=(controller, stop_event)).start()
-
 
 def main():
     fields = ['real_time', 'simulation_time_ns', 'adjacent_access_count_of_victim', 'para_count', 'flip_count']
@@ -67,7 +76,7 @@ def main():
     controller = Controller_ProbabilisticAdjacentRowActivation(writer, stop_event)
 
     # Create threads
-    thread1 = threading.Thread(target=hammer, args=(controller, stop_event))
+    thread1 = threading.Thread(target=hammer_pattern, args=(controller, stop_event))
     thread2 = threading.Thread(target=log, args=(controller, stop_event))
 
     # Start both threads

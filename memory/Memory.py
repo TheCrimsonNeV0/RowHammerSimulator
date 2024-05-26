@@ -207,3 +207,9 @@ class Memory:
             print('Target Row Refresh: ' + str(row))
         elif operation == Enumarations.PARA_ROW_ACTIVATION:
             print('Probabilistic Adjacent Row Activation: ' + str(row))
+
+    def print_access_counts(self):
+        access_counts = []
+        for i in range(self.size):
+            access_counts.append(self.memory[i].access_count)
+        print(access_counts)
