@@ -3,6 +3,7 @@ import time
 import csv
 
 import Configurations
+from enumerations import Enumerations
 from memory.Memory import Memory
 
 file = ''
@@ -33,40 +34,40 @@ class Controller_TargetRowRefresh:
                 self.stop_event.set()
                 return False
 
-            if operation == 'hammer_static':
+            if operation == Enumerations.HAMMER_STATIC:
                 self.memory.access(AGGRESSOR_ROW_ONE)
                 self.memory.access(AGGRESSOR_ROW_TWO)
-            elif operation == 'hammer_pattern':
+            elif operation == Enumerations.HAMMER_PATTERN:
                 pattern = PATTERNS[self.iteration_count % len(PATTERNS)]
                 self.memory.access(pattern[0])
                 self.memory.access(pattern[1])
-            elif operation == 'log':
+            elif operation == Enumerations.LOG:
                 print('Time passed (seconds): ' + str(self.iteration_count))
                 self.memory.print_access_counts()
 
                 simulation_time = self.memory.time_in_ns
-                adjacent_access_count = self.memory.get_adjacent_access_count(VICTIM_ROW)
+                total_access_count = self.memory.get_total_access_count()
                 trr_count = self.memory.trr_refresh_count
-                flip_count = self.memory.memory[VICTIM_ROW].flip_count
+                flip_count = self.memory.get_flip_count()
 
-                self.writer.writerow([self.iteration_count, simulation_time, adjacent_access_count, trr_count, flip_count])
+                self.writer.writerow([self.iteration_count, simulation_time, total_access_count, trr_count, flip_count])
                 self.iteration_count += 1
             return True
 
 def hammer_static(controller, stop_event):  # Simulate hammering behavior
-    if not stop_event.is_set() and controller.edit_list('hammer_static'):
+    if not stop_event.is_set() and controller.edit_list(Enumerations.HAMMER_STATIC):
         threading.Timer(0.01, hammer_static, args=(controller, stop_event)).start()
 
 def hammer_pattern(controller, stop_event):  # Simulate hammering behavior
-    if not stop_event.is_set() and controller.edit_list('hammer_pattern'):
+    if not stop_event.is_set() and controller.edit_list(Enumerations.HAMMER_PATTERN):
         threading.Timer(0.01, hammer_pattern, args=(controller, stop_event)).start()
 
 def log(controller, stop_event):
-    if not stop_event.is_set() and controller.edit_list('log'):
+    if not stop_event.is_set() and controller.edit_list(Enumerations.LOG):
         threading.Timer(1, log, args=(controller, stop_event)).start()
 
 def main():
-    fields = ['real_time', 'simulation_time_ns', 'adjacent_access_count_of_victim', 'trr_count', 'flip_count']
+    fields = ['real_time', 'simulation_time_ns', 'total_access_count', 'trr_count', 'flip_count']
     file = open('../outputs/output_target_row_refresh.csv', 'w', newline='')
     writer = csv.writer(file)
     writer.writerow(fields)
