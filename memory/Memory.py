@@ -6,6 +6,8 @@ from enumerations import Enumerations
 import OperationTimes
 from memory.MemoryCell import MemoryCell
 
+# TODO: Replace all static checks with loops and add thresholds to Configurations
+
 
 class Memory:
     def __init__(self, size=Configurations.MEMORY_SIZE,
@@ -73,8 +75,6 @@ class Memory:
         self.increment_time(Enumerations.MEMORY_ACCESS)
 
         # Simulation operations
-        #TODO: Instead of checking left and right adjacent statically, use a loop
-
         for i in range(1, Configurations.BLAST_RADIUS_RANGE + 1):
             if row + i < self.size:
                 if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row + i) and not self.memory[row + i].did_flip:
@@ -98,30 +98,21 @@ class Memory:
 
     def target_row_refresh(self, row):
         self.increment_trr_lookup(row)
-        if row == 0:
-            if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
-                self.trr_access_count_lookup[row + 1] = 0
-                self.refresh_row(row + 1)
-                self.trr_refresh_count += 1
-                self.log_output(row + 1, Enumerations.TRR_REFRESH)
-        elif row == self.size - 1:
-            if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
-                self.trr_access_count_lookup[row - 1] = 0
-                self.refresh_row(row - 1)
-                self.trr_refresh_count += 1
-                self.log_output(row - 1, Enumerations.TRR_REFRESH)
-        else:
-            if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
-                self.trr_access_count_lookup[row + 1] = 0
-                self.refresh_row(row + 1)
-                self.trr_refresh_count += 1
-                self.log_output(row + 1, Enumerations.TRR_REFRESH)
 
-            if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
-                self.trr_access_count_lookup[row - 1] = 0
-                self.refresh_row(row - 1)
-                self.trr_refresh_count += 1
-                self.log_output(row - 1, Enumerations.TRR_REFRESH)
+        for i in range(1, Configurations.TRR_RANGE + 1):
+            if row + i < self.size:
+                if self.trr_threshold <= self.trr_access_count_lookup[row + i]:
+                    self.trr_access_count_lookup[row + i] = 0
+                    self.refresh_row(row + i)
+                    self.trr_refresh_count += 1
+                    self.log_output(row + i, Enumerations.TRR_REFRESH)
+
+            if 0 <= row - i:
+                if self.trr_threshold <= self.trr_access_count_lookup[row - i]:
+                    self.trr_access_count_lookup[row - i] = 0
+                    self.refresh_row(row - i)
+                    self.trr_refresh_count += 1
+                    self.log_output(row - i, Enumerations.TRR_REFRESH)
 
     def probabilistic_adjacent_row_activation(self, row):  # Uses different random values for each adjacent row
         random_value = random.random()
@@ -199,13 +190,14 @@ class Memory:
             self.memory[row - 1].reset_right_adjacent_access_count()
 
     def increment_trr_lookup(self, row):
-        if row == 0:
-            self.trr_access_count_lookup[row + 1] += 1
-        elif row == self.size - 1:
-            self.trr_access_count_lookup[row - 1] += 1
-        else:
-            self.trr_access_count_lookup[row + 1] += 1
-            self.trr_access_count_lookup[row - 1] += 1
+        for i in range(1, Configurations.TRR_RANGE + 1):
+            if row + i < self.size:
+                if self.trr_threshold <= self.trr_access_count_lookup[row + i]:
+                    self.trr_access_count_lookup[row + i] += 1
+
+            if 0 <= row - i:
+                if self.trr_threshold <= self.trr_access_count_lookup[row - i]:
+                    self.trr_access_count_lookup[row - i] += 1
 
     def increment_time(self, operation):
         if operation == Enumerations.MEMORY_ACCESS:

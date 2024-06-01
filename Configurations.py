@@ -17,6 +17,7 @@ FLIP_THRESHOLD_LAST = 100000 * SIMULATION_SCALE  # Aggressive upper bound for qu
 
 TRR_ENABLED = False
 TRR_THRESHOLD = 8000 * SIMULATION_SCALE  # Hammulator configuration
+TRR_RANGE = 2
 
 PARA_ENABLED = False
 PARA_PROBABILITY = 0.001 / SIMULATION_SCALE  # Hammulator configuration
