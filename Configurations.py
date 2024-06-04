@@ -8,7 +8,7 @@ MEMORY_SIZE = 10
 BLAST_RADIUS_RANGE = 2  # This range includes the adjacent row as well
                         # Impact starts from 1 and linearly goes to 0
 
-SIMULATION_SCALE = 0.3  # This value indicates the scale depending on how long the simulation will run
+SIMULATION_SCALE = 0.2 # This value indicates the scale depending on how long the simulation will run
                         # As the value gets closer to 1, the results will be more realistic
 
 # Should be a random value between 150,000 - 200,000

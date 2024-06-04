@@ -26,6 +26,7 @@ class MemoryCell:
 
     def refresh(self):
         self.reset_adjacent_access_counts()
+        self.reset_blast_radius_impacts()
         self.refresh_count += 1
 
     def increment_left_adjacent_access_count(self):
@@ -55,6 +56,10 @@ class MemoryCell:
     def reset_adjacent_access_counts(self):
         self.left_access_count = 0
         self.right_access_count = 0
+
+    def reset_blast_radius_impacts(self):
+        self.left_blast_radius_impacts = []
+        self.right_blast_radius_impacts = []
 
     def reset_left_adjacent_access_count(self):
         self.left_access_count = 0
