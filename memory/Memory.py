@@ -6,8 +6,6 @@ from enumerations import Enumerations
 import OperationTimes
 from memory.MemoryCell import MemoryCell
 
-# TODO: Replace all static checks with loops and add thresholds to Configurations
-
 
 class Memory:
     def __init__(self, size=Configurations.MEMORY_SIZE,
