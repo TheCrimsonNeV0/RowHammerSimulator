@@ -20,6 +20,7 @@ PATTERNS = [[1, 3], [3, 5], [5, 7], [7, 9]]
 class Controller_ProbabilisticAdjacentRowActivation:
     def __init__(self, writer, stop_event):
         self.memory = Memory(Configurations.MEMORY_SIZE,
+                             Configurations.BLAST_RADIUS_RANGE,
                              Configurations.FLIP_THRESHOLD_FIRST,
                              Configurations.FLIP_THRESHOLD_LAST,
                              False, 0, True, Configurations.PARA_PROBABILITY)

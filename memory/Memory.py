@@ -9,6 +9,7 @@ from memory.MemoryCell import MemoryCell
 
 class Memory:
     def __init__(self, size=Configurations.MEMORY_SIZE,
+                 blast_radius_range=Configurations.BLAST_RADIUS_RANGE,
                  flip_threshold_first=Configurations.FLIP_THRESHOLD_FIRST,
                  flip_threshold_last=Configurations.FLIP_THRESHOLD_LAST,
                  trr_enabled=Configurations.TRR_ENABLED,
@@ -16,6 +17,7 @@ class Memory:
                  para_enabled=Configurations.PARA_ENABLED,
                  para_probability=Configurations.PARA_PROBABILITY):
         self.size = size
+        self.blast_radius_range = blast_radius_range
         self.flip_threshold_first = flip_threshold_first
         self.flip_threshold_last = flip_threshold_last
         self.trr_enabled = trr_enabled
@@ -64,24 +66,24 @@ class Memory:
             self.memory[row + 1].increment_left_adjacent_access_count()
             self.memory[row - 1].increment_right_adjacent_access_count()
 
+        for i in range(2, self.blast_radius_range + 1):
+            if row + i < self.size:
+                self.memory[row + i].increment_left_blast_radius_impact(i - self.blast_radius_range)
+            if 0 <= row - i:
+                self.memory[row - i].increment_right_blast_radius_impact(i - self.blast_radius_range)
+
         self.increment_time(Enumerations.MEMORY_ACCESS)
 
         # Simulation operations
-        if row == 0:
-            if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row + 1) and not self.memory[row + 1].did_flip:
-                if self.should_flip_probabilistic(row + 1):
-                    self.flip(row + 1)
-        elif row == self.size - 1:
-            if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row - 1) and not self.memory[row - 1].did_flip:
-                if self.should_flip_probabilistic(row - 1):
-                    self.flip(row - 1)
-        else:
-            if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row + 1) and not self.memory[row + 1].did_flip:
-                if self.should_flip_probabilistic(row + 1):
-                    self.flip(row + 1)
-            if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row - 1) and not self.memory[row - 1].did_flip:
-                if self.should_flip_probabilistic(row - 1):
-                    self.flip(row - 1)
+        for i in range(1, self.blast_radius_range + 1):
+            if row + i < self.size:
+                if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row + i) and not self.memory[row + i].did_flip:
+                    if self.should_flip_probabilistic(row + i):
+                        self.flip(row + i)
+            if 0 <= row - i:
+                if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row - i) and not self.memory[row - i].did_flip:
+                    if self.should_flip_probabilistic(row - i):
+                        self.flip(row - i)
 
         # Mitigation operations
         # Target Row Refresh
@@ -96,30 +98,21 @@ class Memory:
 
     def target_row_refresh(self, row):
         self.increment_trr_lookup(row)
-        if row == 0:
-            if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
-                self.trr_access_count_lookup[row + 1] = 0
-                self.refresh_row(row + 1)
-                self.trr_refresh_count += 1
-                self.log_output(row + 1, Enumerations.TRR_REFRESH)
-        elif row == self.size - 1:
-            if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
-                self.trr_access_count_lookup[row - 1] = 0
-                self.refresh_row(row - 1)
-                self.trr_refresh_count += 1
-                self.log_output(row - 1, Enumerations.TRR_REFRESH)
-        else:
-            if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
-                self.trr_access_count_lookup[row + 1] = 0
-                self.refresh_row(row + 1)
-                self.trr_refresh_count += 1
-                self.log_output(row + 1, Enumerations.TRR_REFRESH)
 
-            if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
-                self.trr_access_count_lookup[row - 1] = 0
-                self.refresh_row(row - 1)
-                self.trr_refresh_count += 1
-                self.log_output(row - 1, Enumerations.TRR_REFRESH)
+        for i in range(1, Configurations.TRR_RANGE + 1):
+            if row + i < self.size:
+                if self.trr_threshold <= self.trr_access_count_lookup[row + i]:
+                    self.trr_access_count_lookup[row + i] = 0
+                    self.refresh_row(row + i)
+                    self.trr_refresh_count += 1
+                    self.log_output(row + i, Enumerations.TRR_REFRESH)
+
+            if 0 <= row - i:
+                if self.trr_threshold <= self.trr_access_count_lookup[row - i]:
+                    self.trr_access_count_lookup[row - i] = 0
+                    self.refresh_row(row - i)
+                    self.trr_refresh_count += 1
+                    self.log_output(row - i, Enumerations.TRR_REFRESH)
 
     def probabilistic_adjacent_row_activation(self, row):  # Uses different random values for each adjacent row
         random_value = random.random()
@@ -172,7 +165,20 @@ class Memory:
         return self.memory[row].get_adjacent_access_count()
 
     def get_adjacent_access_count_for_refresh(self, row):
-        return self.memory[row].left_access_count + self.memory[row].right_access_count
+        adjacent_access_count = self.memory[row].left_access_count + self.memory[row].right_access_count
+        left_blast_radius_impacts = self.memory[row].get_left_blast_radius_impacts()
+        right_blast_radius_impacts = self.memory[row].get_right_blast_radius_impacts()
+
+
+        for i in range(0, len(left_blast_radius_impacts)):
+            a = adjacent_access_count
+            adjacent_access_count += (left_blast_radius_impacts[i] * (len(left_blast_radius_impacts) - i) / (len(left_blast_radius_impacts) + 1))
+
+        for i in range(0, len(right_blast_radius_impacts)):
+            a = adjacent_access_count
+            adjacent_access_count += (right_blast_radius_impacts[i] * (len(right_blast_radius_impacts) - i) / (len(right_blast_radius_impacts) + 1))
+
+        return adjacent_access_count
 
     def reset_adjacent_access_count(self, row):
         if row == 0:
@@ -183,14 +189,21 @@ class Memory:
             self.memory[row + 1].reset_left_adjacent_access_count()
             self.memory[row - 1].reset_right_adjacent_access_count()
 
+    def reset_blast_radius_impact(self, row):
+        for i in range(1, Configurations.TRR_RANGE + 1):
+            if row + i < self.size:
+                self.memory[row + i].reset_blast_radius_impacts()
+
+            if 0 <= row - i:
+                self.memory[row - i].reset_blast_radius_impacts()
+
     def increment_trr_lookup(self, row):
-        if row == 0:
-            self.trr_access_count_lookup[row + 1] += 1
-        elif row == self.size - 1:
-            self.trr_access_count_lookup[row - 1] += 1
-        else:
-            self.trr_access_count_lookup[row + 1] += 1
-            self.trr_access_count_lookup[row - 1] += 1
+        for i in range(0, Configurations.TRR_RANGE + 1):
+            if row + i < self.size:
+                self.trr_access_count_lookup[row + i] += 1
+
+            if 0 <= row - i:
+                self.trr_access_count_lookup[row - i] += 1
 
     def increment_time(self, operation):
         if operation == Enumerations.MEMORY_ACCESS:
@@ -219,6 +232,12 @@ class Memory:
         for i in range(self.size):
             access_counts.append(self.memory[i].access_count)
         print(access_counts)
+
+    def print_adjacent_access_counts(self):
+        adjacent_access_counts = []
+        for i in range(self.size):
+            adjacent_access_counts.append(self.memory[i].adjacent_access_count)
+        print(adjacent_access_counts)
 
     def get_flip_count(self):
         flip_count = 0
