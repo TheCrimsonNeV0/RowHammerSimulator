@@ -3,6 +3,7 @@ import time
 import csv
 
 import Configurations
+from enumerations import Enumerations
 from memory.Memory import Memory
 
 file = ''
@@ -13,10 +14,13 @@ AGGRESSOR_ROW_ONE = 3
 AGGRESSOR_ROW_TWO = 5
 ITERATION_LIMIT = 120
 
+PATTERNS = [[1, 3], [3, 5], [5, 7], [7, 9]]
+
 
 class Controller_TargetRowRefresh:
     def __init__(self, writer, stop_event):
         self.memory = Memory(Configurations.MEMORY_SIZE,
+                             Configurations.BLAST_RADIUS_RANGE,
                              Configurations.FLIP_THRESHOLD_FIRST,
                              Configurations.FLIP_THRESHOLD_LAST,
                              True, Configurations.TRR_THRESHOLD, False, 0)
@@ -31,34 +35,40 @@ class Controller_TargetRowRefresh:
                 self.stop_event.set()
                 return False
 
-            if operation == 'hammer':
+            if operation == Enumerations.HAMMER_STATIC:
                 self.memory.access(AGGRESSOR_ROW_ONE)
                 self.memory.access(AGGRESSOR_ROW_TWO)
-            elif operation == 'log':
+            elif operation == Enumerations.HAMMER_PATTERN:
+                pattern = PATTERNS[self.iteration_count % len(PATTERNS)]
+                self.memory.access(pattern[0])
+                self.memory.access(pattern[1])
+            elif operation == Enumerations.LOG:
                 print('Time passed (seconds): ' + str(self.iteration_count))
+                self.memory.print_access_counts()
 
                 simulation_time = self.memory.time_in_ns
-                adjacent_access_count = self.memory.get_adjacent_access_count(VICTIM_ROW)
+                total_access_count = self.memory.get_total_access_count()
                 trr_count = self.memory.trr_refresh_count
-                flip_count = self.memory.memory[VICTIM_ROW].flip_count
+                flip_count = self.memory.get_flip_count()
 
-                self.writer.writerow([self.iteration_count, simulation_time, adjacent_access_count, trr_count, flip_count])
+                self.writer.writerow([self.iteration_count, simulation_time, total_access_count, trr_count, flip_count])
                 self.iteration_count += 1
             return True
 
+def hammer_static(controller, stop_event):  # Simulate hammering behavior
+    if not stop_event.is_set() and controller.edit_list(Enumerations.HAMMER_STATIC):
+        threading.Timer(0.01, hammer_static, args=(controller, stop_event)).start()
 
-def hammer(controller, stop_event):  # Simulate hammering behavior
-    if not stop_event.is_set() and controller.edit_list('hammer'):
-        threading.Timer(0.01, hammer, args=(controller, stop_event)).start()
-
+def hammer_pattern(controller, stop_event):  # Simulate hammering behavior
+    if not stop_event.is_set() and controller.edit_list(Enumerations.HAMMER_PATTERN):
+        threading.Timer(0.01, hammer_pattern, args=(controller, stop_event)).start()
 
 def log(controller, stop_event):
-    if not stop_event.is_set() and controller.edit_list('log'):
+    if not stop_event.is_set() and controller.edit_list(Enumerations.LOG):
         threading.Timer(1, log, args=(controller, stop_event)).start()
 
-
 def main():
-    fields = ['real_time', 'simulation_time_ns', 'adjacent_access_count_of_victim', 'trr_count', 'flip_count']
+    fields = ['real_time', 'simulation_time_ns', 'total_access_count', 'trr_count', 'flip_count']
     file = open('../outputs/output_target_row_refresh.csv', 'w', newline='')
     writer = csv.writer(file)
     writer.writerow(fields)
@@ -67,7 +77,7 @@ def main():
     controller = Controller_TargetRowRefresh(writer, stop_event)
 
     # Create threads
-    thread1 = threading.Thread(target=hammer, args=(controller, stop_event))
+    thread1 = threading.Thread(target=hammer_pattern, args=(controller, stop_event))
     thread2 = threading.Thread(target=log, args=(controller, stop_event))
 
     # Start both threads
