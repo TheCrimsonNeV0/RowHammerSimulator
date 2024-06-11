@@ -17,13 +17,13 @@ ITERATION_LIMIT = 120
 PATTERNS = [[1, 3], [3, 5], [5, 7], [7, 9]]
 
 
-class Controller_ProbabilisticAdjacentRowActivation:
+class Controller_AdaptiveRowActivationRefresh:
     def __init__(self, writer, stop_event):
         self.memory = Memory(Configurations.MEMORY_SIZE,
                              Configurations.BLAST_RADIUS_RANGE,
                              Configurations.FLIP_THRESHOLD_FIRST,
                              Configurations.FLIP_THRESHOLD_LAST,
-                             False, 0, True, Configurations.PARA_PROBABILITY, False)
+                             False, 0, False, 0, True)
         self.lock = threading.Lock()
         self.writer = writer
         self.stop_event = stop_event
@@ -48,10 +48,10 @@ class Controller_ProbabilisticAdjacentRowActivation:
 
                 simulation_time = self.memory.time_in_ns
                 total_access_count = self.memory.get_total_access_count()
-                para_count = self.memory.para_row_activation_count
+                arar_count = self.memory.arar_row_activation_count
                 flip_count = self.memory.get_flip_count()
 
-                self.writer.writerow([self.iteration_count, simulation_time, total_access_count, para_count, flip_count])
+                self.writer.writerow([self.iteration_count, simulation_time, total_access_count, arar_count, flip_count])
                 self.iteration_count += 1
             return True
 
@@ -63,19 +63,18 @@ def hammer_pattern(controller, stop_event):  # Simulate hammering behavior
     if not stop_event.is_set() and controller.edit_list(Enumerations.HAMMER_PATTERN):
         threading.Timer(0.01, hammer_pattern, args=(controller, stop_event)).start()
 
-
 def log(controller, stop_event):
     if not stop_event.is_set() and controller.edit_list(Enumerations.LOG):
         threading.Timer(1, log, args=(controller, stop_event)).start()
 
 def main():
-    fields = ['real_time', 'simulation_time_ns', 'total_access_count', 'para_count', 'flip_count']
-    file = open('../outputs/output_probabilistic_adjacent_row_activation.csv', 'w', newline='')
+    fields = ['real_time', 'simulation_time_ns', 'total_access_count', 'arar_count', 'flip_count']
+    file = open('../outputs/output_adaptive_row_activation_and_refresh.csv', 'w', newline='')
     writer = csv.writer(file)
     writer.writerow(fields)
 
     stop_event = threading.Event()
-    controller = Controller_ProbabilisticAdjacentRowActivation(writer, stop_event)
+    controller = Controller_AdaptiveRowActivationRefresh(writer, stop_event)
 
     # Create threads
     thread1 = threading.Thread(target=hammer_pattern, args=(controller, stop_event))
