@@ -23,7 +23,7 @@ class Controller_ProbabilisticAdjacentRowActivation:
                              Configurations.BLAST_RADIUS_RANGE,
                              Configurations.FLIP_THRESHOLD_FIRST,
                              Configurations.FLIP_THRESHOLD_LAST,
-                             False, 0, True, Configurations.PARA_PROBABILITY, False)
+                             False, 0, True, Configurations.PARA_PROBABILITY, False, False)
         self.lock = threading.Lock()
         self.writer = writer
         self.stop_event = stop_event

@@ -1,4 +1,5 @@
 import copy
+import math
 import random
 
 import Configurations
@@ -16,7 +17,8 @@ class Memory:
                  trr_threshold=Configurations.TRR_THRESHOLD,
                  para_enabled=Configurations.PARA_ENABLED,
                  para_probability=Configurations.PARA_PROBABILITY,
-                 arar_enabled=Configurations.ARAR_ENABLED):
+                 arar_enabled=Configurations.ARAR_ENABLED,
+                 arar_check_from_lookup=Configurations.ARAR_CHECK_FROM_LOOKUP):
         self.size = size
         self.blast_radius_range = blast_radius_range
         self.flip_threshold_first = flip_threshold_first
@@ -26,11 +28,15 @@ class Memory:
         self.para_enabled = para_enabled
         self.para_probability = para_probability
         self.arar_enabled = arar_enabled
+        self.arar_check_from_lookup = arar_check_from_lookup
 
+        self.access_count = 0
         self.time_in_ns = 0
         self.trr_refresh_count = 0
         self.para_row_activation_count = 0
         self.arar_row_activation_count = 0
+
+        self.arar_probability_cached = Configurations.ARAR_PROBABILITY_START
 
         self.memory = []
         self.memory_snapshot = []
@@ -69,6 +75,7 @@ class Memory:
 
     def access(self, row):
         self.memory[row].access()
+        self.access_count += 1
 
         if row == 0:
             self.memory[row + 1].increment_left_adjacent_access_count()
@@ -110,10 +117,19 @@ class Memory:
 
         # Adaptive Row Activation and Refresh
         if self.arar_enabled:
-            self.adaptive_row_activation_and_refresh(row)
-            self.increment_time(Enumerations.ARAR_LOOKUP) # Same with TRR, reads and writes to lookup table
-            self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY) # Same with PARA, checks should refresh
-            self.increment_time(Enumerations.ARAR_CALCULATE_PROBABILITY) # Mathematical calculation delay
+            #  Update probabilities in the lookup table once every frequency
+            if self.access_count % math.ceil(Configurations.ARAR_FREQUENCY) == 0:
+                self.adaptive_row_activation_and_refresh_update(row)
+                self.increment_time(Enumerations.ARAR_CALCULATE_PROBABILITY)  # Mathematical calculation delay
+
+            #  Depending on the configuration, execute necessary instance
+            if self.arar_check_from_lookup:
+                self.adaptive_row_activation_and_refresh_check_from_lookup()
+                self.increment_time(Enumerations.ARAR_LOOKUP)  # Same with TRR, reads and writes to lookup table
+                self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY)  # Same with PARA, checks should refresh
+            else:
+                self.adaptive_row_activation_and_refresh_check_from_cache()
+                self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY)
 
     def target_row_refresh(self, row):
         self.increment_trr_lookup(row)
@@ -158,21 +174,36 @@ class Memory:
                 self.para_row_activation_count += 1
                 self.log_output(row - 1, Enumerations.PARA_ROW_ACTIVATION)
 
-    def adaptive_row_activation_and_refresh(self, row):  # Experimental Mitigation Method
-        # TODO: Ascent should be much slower
-        # Another apporact is use PARA with further adjacent rows
-
+    def adaptive_row_activation_and_refresh_update(self, row):  # Experimental Mitigation Method
+        # Another approach is use PARA with further adjacent rows
         if row == 0:
             self.arar_current_probabilities[row + 1] = gradient_ascent(self.arar_current_probabilities[row + 1])
+            if self.arar_probability_cached < self.arar_current_probabilities[row + 1]:
+                self.arar_probability_cached = self.arar_current_probabilities[row + 1]
         elif row == self.size - 1:
             self.arar_current_probabilities[row - 1] = gradient_ascent(self.arar_current_probabilities[row - 1])
+            if self.arar_probability_cached < self.arar_current_probabilities[row - 1]:
+                self.arar_probability_cached = self.arar_current_probabilities[row - 1]
         else:
             self.arar_current_probabilities[row + 1] = gradient_ascent(self.arar_current_probabilities[row + 1])
             self.arar_current_probabilities[row - 1] = gradient_ascent(self.arar_current_probabilities[row - 1])
+            higher_probability = max(self.arar_current_probabilities[row + 1], self.arar_current_probabilities[row - 1])
+            if self.arar_probability_cached < higher_probability:
+                self.arar_probability_cached = higher_probability
 
+    def adaptive_row_activation_and_refresh_check_from_lookup(self):
         for i in range(len(self.memory)):
             random_value = random.random()
             if random_value <= self.arar_current_probabilities[i]:
+                self.refresh_row(i)
+                self.arar_current_probabilities[i] = Configurations.ARAR_PROBABILITY_START
+                self.arar_row_activation_count += 1
+                self.log_output(i, Enumerations.ARAR_ROW_ACTIVATION)
+
+    def adaptive_row_activation_and_refresh_check_from_cache(self):
+        for i in range(len(self.memory)):
+            random_value = random.random()
+            if random_value <= self.arar_probability_cached:
                 self.refresh_row(i)
                 self.arar_current_probabilities[i] = Configurations.ARAR_PROBABILITY_START
                 self.arar_row_activation_count += 1
@@ -183,7 +214,8 @@ class Memory:
 
         adjacent_access_count = self.get_adjacent_access_count_for_refresh(row)
         random_value = random.random()
-        probability_threshold = (adjacent_access_count - self.flip_threshold_first) / (self.flip_threshold_last - self.flip_threshold_first)
+        probability_threshold = (adjacent_access_count - self.flip_threshold_first) / (
+                    self.flip_threshold_last - self.flip_threshold_first)
 
         if random_value <= probability_threshold:
             return True
@@ -206,14 +238,15 @@ class Memory:
         left_blast_radius_impacts = self.memory[row].get_left_blast_radius_impacts()
         right_blast_radius_impacts = self.memory[row].get_right_blast_radius_impacts()
 
-
         for i in range(0, len(left_blast_radius_impacts)):
             a = adjacent_access_count
-            adjacent_access_count += (left_blast_radius_impacts[i] * (len(left_blast_radius_impacts) - i) / (len(left_blast_radius_impacts) + 1))
+            adjacent_access_count += (left_blast_radius_impacts[i] * (len(left_blast_radius_impacts) - i) / (
+                        len(left_blast_radius_impacts) + 1))
 
         for i in range(0, len(right_blast_radius_impacts)):
             a = adjacent_access_count
-            adjacent_access_count += (right_blast_radius_impacts[i] * (len(right_blast_radius_impacts) - i) / (len(right_blast_radius_impacts) + 1))
+            adjacent_access_count += (right_blast_radius_impacts[i] * (len(right_blast_radius_impacts) - i) / (
+                        len(right_blast_radius_impacts) + 1))
 
         return adjacent_access_count
 
@@ -259,13 +292,16 @@ class Memory:
         elif operation == Enumerations.TRR_LOOKUP:
             self.time_in_ns += random.randint(OperationTimes.TRR_LOOKUP_LOW, OperationTimes.TRR_LOOKUP_HIGH)
         elif operation == Enumerations.PARA_CHECK_PROBABILITY:
-            self.time_in_ns += random.randint(OperationTimes.PARA_PROBABILITY_CHECK_LOW, OperationTimes.PARA_PROBABILITY_CHECK_HIGH)
+            self.time_in_ns += random.randint(OperationTimes.PARA_PROBABILITY_CHECK_LOW,
+                                              OperationTimes.PARA_PROBABILITY_CHECK_HIGH)
         elif operation == Enumerations.ARAR_LOOKUP:
             self.time_in_ns += random.randint(OperationTimes.ARAR_LOOKUP_LOW, OperationTimes.ARAR_LOOKUP_HIGH)
         elif operation == Enumerations.ARAR_CHECK_PROBABILITY:
-            self.time_in_ns += random.randint(OperationTimes.ARAR_PROBABILITY_CHECK_LOW, OperationTimes.ARAR_PROBABILITY_CHECK_HIGH)
+            self.time_in_ns += random.randint(OperationTimes.ARAR_PROBABILITY_CHECK_LOW,
+                                              OperationTimes.ARAR_PROBABILITY_CHECK_HIGH)
         elif operation == Enumerations.ARAR_CALCULATE_PROBABILITY:
-            self.time_in_ns += random.randint(OperationTimes.ARAR_CALCULATE_PROBABILITY_LOW, OperationTimes.ARAR_CALCULATE_PROBABILITY_HIGH)
+            self.time_in_ns += random.randint(OperationTimes.ARAR_CALCULATE_PROBABILITY_LOW,
+                                              OperationTimes.ARAR_CALCULATE_PROBABILITY_HIGH)
 
     def log_output(self, row, operation):
         if operation == Enumerations.MEMORY_ACCESS:
@@ -302,17 +338,20 @@ class Memory:
                 flip_count += 1
         return flip_count
 
+
 # Gradient ascent algorithm
 def gradient_ascent(p, adaptation_rate=Configurations.ARAR_ADAPTATION_RATE):
-    gradient_value = gradient_function_arar(p)  # Compute the gradient at the current value of p
-    p += adaptation_rate * gradient_value  # Update p by moving in the direction of the gradient
-    return p
+    if p <= Configurations.ARAR_PROBABILITY_END:
+        gradient_value = gradient_function_arar(p)  # Compute the gradient at the current value of p
+        p += adaptation_rate * gradient_value  # Update p by moving in the direction of the gradient
+        return p
+    return Configurations.ARAR_PROBABILITY_END
+
 
 # Mathematical utility functions for ARAR gradient ascent
 def function_arar(p):
     return -(p - 1) ** 2
 
+
 def gradient_function_arar(p):
     return -2 * (p - 1)
-
-
