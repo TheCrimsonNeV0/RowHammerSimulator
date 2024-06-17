@@ -3,13 +3,13 @@
 # TRR lookup: 2 ns - 5 ns
 # PARA probability calculation: 1 ns - 2 ns
 
-MEMORY_SIZE = 10
+SIMULATION_SCALE = 0.2  # This value indicates the scale depending on how long the simulation will run
+# As the value gets closer to 1, the results will be more realistic
 
 BLAST_RADIUS_RANGE = 2  # This range includes the adjacent row as well
-                        # Impact starts from 1 and linearly goes to 0
+# Impact starts from 1 and linearly goes to 0
 
-SIMULATION_SCALE = 0.2 # This value indicates the scale depending on how long the simulation will run
-                        # As the value gets closer to 1, the results will be more realistic
+MEMORY_SIZE = 48
 
 # Should be a random value between 150,000 - 200,000
 FLIP_THRESHOLD_FIRST = 10000 * SIMULATION_SCALE  # Hammulator configuration
@@ -22,10 +22,12 @@ TRR_RANGE = 2
 PARA_ENABLED = False
 PARA_PROBABILITY = 0.001 / SIMULATION_SCALE  # Hammulator configuration
 
-#Custom configuration
+# Custom configuration
 ARAR_ENABLED = False
 ARAR_CHECK_FROM_LOOKUP = True
-ARAR_FREQUENCY = 10 * SIMULATION_SCALE  # Calculation is executed once every ARAR_FREQUENCY iteration
-ARAR_PROBABILITY_START = 0.0001 / SIMULATION_SCALE
+ARAR_FREQUENCY = round(10 * SIMULATION_SCALE)  # Calculation is executed once every ARAR_FREQUENCY iteration
+ARAR_RANGE = 2
+ARAR_PROBABILITY_START = 0.00001 / SIMULATION_SCALE
 ARAR_PROBABILITY_END = 0.001 / SIMULATION_SCALE
+ARAR_PROBABILITY_AVERAGE = (ARAR_PROBABILITY_START + ARAR_PROBABILITY_END) / 2
 ARAR_ADAPTATION_RATE = 0.0001 / SIMULATION_SCALE

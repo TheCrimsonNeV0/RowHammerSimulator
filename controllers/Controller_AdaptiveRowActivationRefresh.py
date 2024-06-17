@@ -5,6 +5,7 @@ import csv
 import Configurations
 from enumerations import Enumerations
 from memory.Memory import Memory
+from utility import Utility
 
 file = ''
 
@@ -14,7 +15,7 @@ AGGRESSOR_ROW_ONE = 3
 AGGRESSOR_ROW_TWO = 5
 ITERATION_LIMIT = 120
 
-PATTERNS = [[1, 3], [3, 5], [5, 7], [7, 9]]
+PATTERNS = Utility.generate_list_of_lists(9)
 
 
 class Controller_AdaptiveRowActivationRefresh:

@@ -6,6 +6,7 @@ import Configurations
 from enumerations import Enumerations
 import OperationTimes
 from memory.MemoryCell import MemoryCell
+from utility import Utility
 
 
 class Memory:
@@ -174,19 +175,21 @@ class Memory:
                 self.para_row_activation_count += 1
                 self.log_output(row - 1, Enumerations.PARA_ROW_ACTIVATION)
 
+    #  CUSTOM OPERATIONS BEGIN
+
     def adaptive_row_activation_and_refresh_update(self, row):  # Experimental Mitigation Method
         # Another approach is use PARA with further adjacent rows
         if row == 0:
-            self.arar_current_probabilities[row + 1] = gradient_ascent(self.arar_current_probabilities[row + 1])
+            self.arar_current_probabilities[row + 1] = Utility.gradient_ascent(self.arar_current_probabilities[row + 1])
             if self.arar_probability_cached < self.arar_current_probabilities[row + 1]:
                 self.arar_probability_cached = self.arar_current_probabilities[row + 1]
         elif row == self.size - 1:
-            self.arar_current_probabilities[row - 1] = gradient_ascent(self.arar_current_probabilities[row - 1])
+            self.arar_current_probabilities[row - 1] = Utility.gradient_ascent(self.arar_current_probabilities[row - 1])
             if self.arar_probability_cached < self.arar_current_probabilities[row - 1]:
                 self.arar_probability_cached = self.arar_current_probabilities[row - 1]
         else:
-            self.arar_current_probabilities[row + 1] = gradient_ascent(self.arar_current_probabilities[row + 1])
-            self.arar_current_probabilities[row - 1] = gradient_ascent(self.arar_current_probabilities[row - 1])
+            self.arar_current_probabilities[row + 1] = Utility.gradient_ascent(self.arar_current_probabilities[row + 1])
+            self.arar_current_probabilities[row - 1] = Utility.gradient_ascent(self.arar_current_probabilities[row - 1])
             higher_probability = max(self.arar_current_probabilities[row + 1], self.arar_current_probabilities[row - 1])
             if self.arar_probability_cached < higher_probability:
                 self.arar_probability_cached = higher_probability
@@ -208,6 +211,17 @@ class Memory:
                 self.arar_current_probabilities[i] = Configurations.ARAR_PROBABILITY_START
                 self.arar_row_activation_count += 1
                 self.log_output(i, Enumerations.ARAR_ROW_ACTIVATION)
+
+    def adaptive_row_activation_and_refresh_check_static(self):
+        for i in range(len(self.memory)):
+            random_value = random.random()
+            if random_value <= Configurations.ARAR_PROBABILITY_AVERAGE:
+                self.refresh_row(i)
+                self.arar_current_probabilities[i] = Configurations.ARAR_PROBABILITY_START
+                self.arar_row_activation_count += 1
+                self.log_output(i, Enumerations.ARAR_ROW_ACTIVATION)
+
+    #  CUSTOM OPERATIONS END
 
     def should_flip_probabilistic(self, row):
         # This section uses the calculation logic proposed in Hammulator
@@ -337,21 +351,3 @@ class Memory:
             if row.did_flip:
                 flip_count += 1
         return flip_count
-
-
-# Gradient ascent algorithm
-def gradient_ascent(p, adaptation_rate=Configurations.ARAR_ADAPTATION_RATE):
-    if p <= Configurations.ARAR_PROBABILITY_END:
-        gradient_value = gradient_function_arar(p)  # Compute the gradient at the current value of p
-        p += adaptation_rate * gradient_value  # Update p by moving in the direction of the gradient
-        return p
-    return Configurations.ARAR_PROBABILITY_END
-
-
-# Mathematical utility functions for ARAR gradient ascent
-def function_arar(p):
-    return -(p - 1) ** 2
-
-
-def gradient_function_arar(p):
-    return -2 * (p - 1)
