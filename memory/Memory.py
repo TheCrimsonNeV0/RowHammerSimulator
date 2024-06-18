@@ -19,7 +19,8 @@ class Memory:
                  para_enabled=Configurations.PARA_ENABLED,
                  para_probability=Configurations.PARA_PROBABILITY,
                  arar_enabled=Configurations.ARAR_ENABLED,
-                 arar_check_from_lookup=Configurations.ARAR_CHECK_FROM_LOOKUP):
+                 arar_check_from_lookup=Configurations.ARAR_CHECK_FROM_LOOKUP,
+                 arar_range=Configurations.ARAR_RANGE):
         self.size = size
         self.blast_radius_range = blast_radius_range
         self.flip_threshold_first = flip_threshold_first
@@ -30,6 +31,7 @@ class Memory:
         self.para_probability = para_probability
         self.arar_enabled = arar_enabled
         self.arar_check_from_lookup = arar_check_from_lookup
+        self.arar_range = arar_range
 
         self.access_count = 0
         self.time_in_ns = 0
@@ -125,11 +127,11 @@ class Memory:
 
             #  Depending on the configuration, execute necessary instance
             if self.arar_check_from_lookup:
-                self.adaptive_row_activation_and_refresh_check_from_lookup()
+                self.adaptive_row_activation_and_refresh_check_from_lookup(row)
                 self.increment_time(Enumerations.ARAR_LOOKUP)  # Same with TRR, reads and writes to lookup table
                 self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY)  # Same with PARA, checks should refresh
             else:
-                self.adaptive_row_activation_and_refresh_check_from_cache()
+                self.adaptive_row_activation_and_refresh_check_from_cache(row)
                 self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY)
 
     def target_row_refresh(self, row):
@@ -178,7 +180,7 @@ class Memory:
     #  CUSTOM OPERATIONS BEGIN
 
     def adaptive_row_activation_and_refresh_update(self, row):  # Experimental Mitigation Method
-        # Another approach is use PARA with further adjacent rows
+        # TODO: Increase probability on further rows (half of target row)
         if row == 0:
             self.arar_current_probabilities[row + 1] = Utility.gradient_ascent(self.arar_current_probabilities[row + 1])
             if self.arar_probability_cached < self.arar_current_probabilities[row + 1]:
@@ -194,23 +196,55 @@ class Memory:
             if self.arar_probability_cached < higher_probability:
                 self.arar_probability_cached = higher_probability
 
-    def adaptive_row_activation_and_refresh_check_from_lookup(self):
-        for i in range(len(self.memory)):
-            random_value = random.random()
-            if random_value <= self.arar_current_probabilities[i]:
-                self.refresh_row(i)
-                self.arar_current_probabilities[i] = Configurations.ARAR_PROBABILITY_START
-                self.arar_row_activation_count += 1
-                self.log_output(i, Enumerations.ARAR_ROW_ACTIVATION)
+    def adaptive_row_activation_and_refresh_check_from_lookup(self, row):
+        random_value = random.random()
+        if random_value <= self.arar_current_probabilities[row]:
+            self.refresh_row(row)
+            self.arar_current_probabilities[row] = Configurations.ARAR_PROBABILITY_START
+            self.arar_row_activation_count += 1
+            self.log_output(row, Enumerations.ARAR_ROW_ACTIVATION)
 
-    def adaptive_row_activation_and_refresh_check_from_cache(self):
-        for i in range(len(self.memory)):
-            random_value = random.random()
-            if random_value <= self.arar_probability_cached:
-                self.refresh_row(i)
-                self.arar_current_probabilities[i] = Configurations.ARAR_PROBABILITY_START
-                self.arar_row_activation_count += 1
-                self.log_output(i, Enumerations.ARAR_ROW_ACTIVATION)
+        for i in range(2, self.blast_radius_range + 1):
+            if row + i < self.size:
+                random_value = random.random()
+                if random_value <= self.arar_current_probabilities[row + i]:
+                    self.refresh_row(row + i)
+                    self.arar_current_probabilities[row + i] = Configurations.ARAR_PROBABILITY_START
+                    self.arar_row_activation_count += 1
+                    self.log_output(row + i, Enumerations.ARAR_ROW_ACTIVATION)
+
+            if 0 <= row - i:
+                random_value = random.random()
+                if random_value <= self.arar_current_probabilities[row - i]:
+                    self.refresh_row(row - i)
+                    self.arar_current_probabilities[row - i] = Configurations.ARAR_PROBABILITY_START
+                    self.arar_row_activation_count += 1
+                    self.log_output(row - i, Enumerations.ARAR_ROW_ACTIVATION)
+
+    def adaptive_row_activation_and_refresh_check_from_cache(self, row):
+        random_value = random.random()
+        if random_value <= self.arar_probability_cached:
+            self.refresh_row(row)
+            self.arar_current_probabilities[row] = Configurations.ARAR_PROBABILITY_START
+            self.arar_row_activation_count += 1
+            self.log_output(row, Enumerations.ARAR_ROW_ACTIVATION)
+
+        for i in range(2, self.arar_range + 1):
+            if row + i < self.size:
+                random_value = random.random()
+                if random_value <= self.arar_probability_cached:
+                    self.refresh_row(i)
+                    self.arar_current_probabilities[i] = Configurations.ARAR_PROBABILITY_START
+                    self.arar_row_activation_count += 1
+                    self.log_output(i, Enumerations.ARAR_ROW_ACTIVATION)
+
+            if 0 <= row - i:
+                random_value = random.random()
+                if random_value <= self.arar_probability_cached:
+                    self.refresh_row(i)
+                    self.arar_current_probabilities[i] = Configurations.ARAR_PROBABILITY_START
+                    self.arar_row_activation_count += 1
+                    self.log_output(i, Enumerations.ARAR_ROW_ACTIVATION)
 
     def adaptive_row_activation_and_refresh_check_static(self):
         for i in range(len(self.memory)):
