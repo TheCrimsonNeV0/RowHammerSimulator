@@ -25,7 +25,7 @@ PARA_PROBABILITY = 0.001 / SIMULATION_SCALE  # Hammulator configuration
 # Custom configuration
 ARAR_ENABLED = False
 ARAR_CHECK_FROM_LOOKUP = True
-ARAR_FREQUENCY = round(10 * SIMULATION_SCALE)  # Calculation is executed once every ARAR_FREQUENCY iteration
+ARAR_FREQUENCY = round(20 * SIMULATION_SCALE)  # Calculation is executed once every ARAR_FREQUENCY iteration
 ARAR_RANGE = 2
 ARAR_PROBABILITY_START = 0.00001 / SIMULATION_SCALE
 ARAR_PROBABILITY_END = 0.001 / SIMULATION_SCALE

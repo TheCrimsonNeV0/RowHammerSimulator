@@ -181,17 +181,55 @@ class Memory:
 
     def adaptive_row_activation_and_refresh_update(self, row):  # Experimental Mitigation Method
         # TODO: Increase probability on further rows (half of target row)
+
+        for i in range(1, self.blast_radius_range + 1):
+            if row + i < self.size:
+                random_value = random.random()
+                if random_value <= self.arar_current_probabilities[row + i]:
+                    self.refresh_row(row + i)
+                    self.arar_current_probabilities[row + i] = Configurations.ARAR_PROBABILITY_START
+                    self.arar_row_activation_count += 1
+                    self.log_output(row + i, Enumerations.ARAR_ROW_ACTIVATION)
+
+            if 0 <= row - i:
+                random_value = random.random()
+                if random_value <= self.arar_current_probabilities[row - i]:
+                    self.refresh_row(row - i)
+                    self.arar_current_probabilities[row - i] = Configurations.ARAR_PROBABILITY_START
+                    self.arar_row_activation_count += 1
+                    self.log_output(row - i, Enumerations.ARAR_ROW_ACTIVATION)
+
+
+
+
         if row == 0:
-            self.arar_current_probabilities[row + 1] = Utility.gradient_ascent(self.arar_current_probabilities[row + 1])
+            adjusted_probability_next = Utility.gradient_ascent(self.arar_current_probabilities[row + 1])
+            self.arar_current_probabilities[row + 1] = adjusted_probability_next
+            for i in range(2, self.blast_radius_range + 1):
+                if row + i < self.size:
+                    self.arar_current_probabilities[row + i] = adjusted_probability_next / i
             if self.arar_probability_cached < self.arar_current_probabilities[row + 1]:
                 self.arar_probability_cached = self.arar_current_probabilities[row + 1]
         elif row == self.size - 1:
-            self.arar_current_probabilities[row - 1] = Utility.gradient_ascent(self.arar_current_probabilities[row - 1])
+            adjusted_probability_previous = Utility.gradient_ascent(self.arar_current_probabilities[row - 1])
+            self.arar_current_probabilities[row - 1] = adjusted_probability_previous
+            for i in range(2, self.blast_radius_range + 1):
+                if 0 <= row - i:
+                        self.arar_current_probabilities[row - i] = adjusted_probability_previous / i
             if self.arar_probability_cached < self.arar_current_probabilities[row - 1]:
                 self.arar_probability_cached = self.arar_current_probabilities[row - 1]
         else:
-            self.arar_current_probabilities[row + 1] = Utility.gradient_ascent(self.arar_current_probabilities[row + 1])
-            self.arar_current_probabilities[row - 1] = Utility.gradient_ascent(self.arar_current_probabilities[row - 1])
+            adjusted_probability_next = Utility.gradient_ascent(self.arar_current_probabilities[row + 1])
+            adjusted_probability_previous = Utility.gradient_ascent(self.arar_current_probabilities[row - 1])
+
+            self.arar_current_probabilities[row + 1] = adjusted_probability_next
+            self.arar_current_probabilities[row - 1] = adjusted_probability_previous
+            for i in range(2, self.blast_radius_range + 1):
+                if row + i < self.size:
+                    self.arar_current_probabilities[row + i] = adjusted_probability_next / i
+                if 0 <= row - i:
+                    self.arar_current_probabilities[row - i] = adjusted_probability_previous / i
+
             higher_probability = max(self.arar_current_probabilities[row + 1], self.arar_current_probabilities[row - 1])
             if self.arar_probability_cached < higher_probability:
                 self.arar_probability_cached = higher_probability
