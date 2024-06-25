@@ -1,5 +1,5 @@
+import math
 import Configurations
-
 
 def generate_list_of_lists(i):
     if i < 2:
@@ -19,11 +19,12 @@ def gradient_ascent(p, adaptation_rate=Configurations.ARAR_ADAPTATION_RATE):
         return p
     return Configurations.ARAR_PROBABILITY_END
 
-
 # Mathematical utility functions for ARAR gradient ascent
 def function_arar(p):
     return -(p - 1) ** 2
 
-
 def gradient_function_arar(p):
     return -2 * (p - 1)
+
+def exponential_decay(distance, lambda_value=Configurations.EXPONENTIAL_DECAY_LAMBDA):
+    return math.exp(-lambda_value * distance)

@@ -13,7 +13,7 @@ file = ''
 VICTIM_ROW = 4
 AGGRESSOR_ROW_ONE = 3
 AGGRESSOR_ROW_TWO = 5
-ITERATION_LIMIT = 120
+ITERATION_LIMIT = Configurations.ITERATION_LIMIT
 
 PATTERNS = Utility.generate_list_of_lists(9)
 

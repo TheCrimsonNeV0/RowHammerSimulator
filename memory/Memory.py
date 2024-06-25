@@ -116,13 +116,16 @@ class Memory:
         # Probabilistic Adjacent Row Activation
         if self.para_enabled:
             self.probabilistic_adjacent_row_activation(row)
-            self.increment_time(Enumerations.PARA_CHECK_PROBABILITY)
+            for i in range(2):
+                if 0 <= row - i or row + i < self.size:
+                    self.increment_time(Enumerations.PARA_CHECK_PROBABILITY)
 
         # Adaptive Row Activation and Refresh
         if self.arar_enabled:
             #  Update probabilities in the lookup table once every frequency
             if self.access_count % math.ceil(Configurations.ARAR_FREQUENCY) == 0:
                 self.adaptive_row_activation_and_refresh_update(row)
+                # TODO: Add delay of calculation (division) and use a loop to calculate for each iteration
                 self.increment_time(Enumerations.ARAR_CALCULATE_PROBABILITY)  # Mathematical calculation delay
 
             #  Depending on the configuration, execute necessary instance
@@ -180,28 +183,6 @@ class Memory:
     #  CUSTOM OPERATIONS BEGIN
 
     def adaptive_row_activation_and_refresh_update(self, row):  # Experimental Mitigation Method
-        # TODO: Increase probability on further rows (half of target row)
-
-        for i in range(1, self.blast_radius_range + 1):
-            if row + i < self.size:
-                random_value = random.random()
-                if random_value <= self.arar_current_probabilities[row + i]:
-                    self.refresh_row(row + i)
-                    self.arar_current_probabilities[row + i] = Configurations.ARAR_PROBABILITY_START
-                    self.arar_row_activation_count += 1
-                    self.log_output(row + i, Enumerations.ARAR_ROW_ACTIVATION)
-
-            if 0 <= row - i:
-                random_value = random.random()
-                if random_value <= self.arar_current_probabilities[row - i]:
-                    self.refresh_row(row - i)
-                    self.arar_current_probabilities[row - i] = Configurations.ARAR_PROBABILITY_START
-                    self.arar_row_activation_count += 1
-                    self.log_output(row - i, Enumerations.ARAR_ROW_ACTIVATION)
-
-
-
-
         if row == 0:
             adjusted_probability_next = Utility.gradient_ascent(self.arar_current_probabilities[row + 1])
             self.arar_current_probabilities[row + 1] = adjusted_probability_next
@@ -235,14 +216,7 @@ class Memory:
                 self.arar_probability_cached = higher_probability
 
     def adaptive_row_activation_and_refresh_check_from_lookup(self, row):
-        random_value = random.random()
-        if random_value <= self.arar_current_probabilities[row]:
-            self.refresh_row(row)
-            self.arar_current_probabilities[row] = Configurations.ARAR_PROBABILITY_START
-            self.arar_row_activation_count += 1
-            self.log_output(row, Enumerations.ARAR_ROW_ACTIVATION)
-
-        for i in range(2, self.blast_radius_range + 1):
+        for i in range(1, self.blast_radius_range + 1):
             if row + i < self.size:
                 random_value = random.random()
                 if random_value <= self.arar_current_probabilities[row + i]:
@@ -260,31 +234,24 @@ class Memory:
                     self.log_output(row - i, Enumerations.ARAR_ROW_ACTIVATION)
 
     def adaptive_row_activation_and_refresh_check_from_cache(self, row):
-        random_value = random.random()
-        if random_value <= self.arar_probability_cached:
-            self.refresh_row(row)
-            self.arar_current_probabilities[row] = Configurations.ARAR_PROBABILITY_START
-            self.arar_row_activation_count += 1
-            self.log_output(row, Enumerations.ARAR_ROW_ACTIVATION)
-
-        for i in range(2, self.arar_range + 1):
+        for i in range(1, self.arar_range + 1):
             if row + i < self.size:
                 random_value = random.random()
                 if random_value <= self.arar_probability_cached:
-                    self.refresh_row(i)
-                    self.arar_current_probabilities[i] = Configurations.ARAR_PROBABILITY_START
+                    self.refresh_row(row + i)
+                    self.arar_current_probabilities[row + i] = Configurations.ARAR_PROBABILITY_START
                     self.arar_row_activation_count += 1
-                    self.log_output(i, Enumerations.ARAR_ROW_ACTIVATION)
+                    self.log_output(row + i, Enumerations.ARAR_ROW_ACTIVATION)
 
             if 0 <= row - i:
                 random_value = random.random()
                 if random_value <= self.arar_probability_cached:
-                    self.refresh_row(i)
-                    self.arar_current_probabilities[i] = Configurations.ARAR_PROBABILITY_START
+                    self.refresh_row(row - i)
+                    self.arar_current_probabilities[row - i] = Configurations.ARAR_PROBABILITY_START
                     self.arar_row_activation_count += 1
-                    self.log_output(i, Enumerations.ARAR_ROW_ACTIVATION)
+                    self.log_output(row - i, Enumerations.ARAR_ROW_ACTIVATION)
 
-    def adaptive_row_activation_and_refresh_check_static(self):
+    def adaptive_row_activation_and_refresh_check_static(self):  # Not used in the current implementation
         for i in range(len(self.memory)):
             random_value = random.random()
             if random_value <= Configurations.ARAR_PROBABILITY_AVERAGE:
@@ -326,13 +293,11 @@ class Memory:
 
         for i in range(0, len(left_blast_radius_impacts)):
             a = adjacent_access_count
-            adjacent_access_count += (left_blast_radius_impacts[i] * (len(left_blast_radius_impacts) - i) / (
-                        len(left_blast_radius_impacts) + 1))
+            adjacent_access_count += left_blast_radius_impacts[i] * Utility.exponential_decay(i + 2)  # +2 for distance
 
         for i in range(0, len(right_blast_radius_impacts)):
             a = adjacent_access_count
-            adjacent_access_count += (right_blast_radius_impacts[i] * (len(right_blast_radius_impacts) - i) / (
-                        len(right_blast_radius_impacts) + 1))
+            adjacent_access_count += right_blast_radius_impacts[i] * Utility.exponential_decay(i + 2)  # +2 for distance
 
         return adjacent_access_count
 

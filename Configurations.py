@@ -6,8 +6,10 @@
 SIMULATION_SCALE = 0.2  # This value indicates the scale depending on how long the simulation will run
 # As the value gets closer to 1, the results will be more realistic
 
+ITERATION_LIMIT = 60 * 5  # How many seconds the simulation should run for
+
 BLAST_RADIUS_RANGE = 2  # This range includes the adjacent row as well
-# Impact starts from 1 and linearly goes to 0
+EXPONENTIAL_DECAY_LAMBDA = 0.34
 
 MEMORY_SIZE = 48
 
@@ -30,4 +32,4 @@ ARAR_RANGE = 2
 ARAR_PROBABILITY_START = 0.00001 / SIMULATION_SCALE
 ARAR_PROBABILITY_END = 0.001 / SIMULATION_SCALE
 ARAR_PROBABILITY_AVERAGE = (ARAR_PROBABILITY_START + ARAR_PROBABILITY_END) / 2
-ARAR_ADAPTATION_RATE = 0.0001 / SIMULATION_SCALE
+ARAR_ADAPTATION_RATE = 0.0005 / SIMULATION_SCALE
