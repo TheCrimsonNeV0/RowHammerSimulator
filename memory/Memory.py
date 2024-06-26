@@ -125,8 +125,9 @@ class Memory:
             #  Update probabilities in the lookup table once every frequency
             if self.access_count % math.ceil(Configurations.ARAR_FREQUENCY) == 0:
                 self.adaptive_row_activation_and_refresh_update(row)
-                # TODO: Add delay of calculation (division) and use a loop to calculate for each iteration
                 self.increment_time(Enumerations.ARAR_CALCULATE_PROBABILITY)  # Mathematical calculation delay
+                for i in range(2 * (self.arar_range - 1)):
+                    self.increment_time(Enumerations.ARAR_DIVISION_FOR_FURTHER_ROWS)  # Mathematical calculation delay
 
             #  Depending on the configuration, execute necessary instance
             if self.arar_check_from_lookup:
@@ -196,7 +197,7 @@ class Memory:
             self.arar_current_probabilities[row - 1] = adjusted_probability_previous
             for i in range(2, self.blast_radius_range + 1):
                 if 0 <= row - i:
-                        self.arar_current_probabilities[row - i] = adjusted_probability_previous / i
+                    self.arar_current_probabilities[row - i] = adjusted_probability_previous / i
             if self.arar_probability_cached < self.arar_current_probabilities[row - 1]:
                 self.arar_probability_cached = self.arar_current_probabilities[row - 1]
         else:
@@ -353,6 +354,9 @@ class Memory:
         elif operation == Enumerations.ARAR_CALCULATE_PROBABILITY:
             self.time_in_ns += random.randint(OperationTimes.ARAR_CALCULATE_PROBABILITY_LOW,
                                               OperationTimes.ARAR_CALCULATE_PROBABILITY_HIGH)
+        elif operation == Enumerations.ARAR_DIVISION_FOR_FURTHER_ROWS:
+            self.time_in_ns += random.randint(OperationTimes.ARAR_DIVISION_FOR_FURTHER_ROWS_LOW,
+                                              OperationTimes.ARAR_DIVISION_FOR_FURTHER_ROWS_HIGH)
 
     def log_output(self, row, operation):
         if operation == Enumerations.MEMORY_ACCESS:
