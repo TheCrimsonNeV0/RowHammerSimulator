@@ -127,16 +127,18 @@ class Memory:
                 self.adaptive_row_activation_and_refresh_update(row)
                 self.increment_time(Enumerations.ARAR_CALCULATE_PROBABILITY)  # Mathematical calculation delay
                 for i in range(2 * (self.arar_range - 1)):
-                    self.increment_time(Enumerations.ARAR_DIVISION_FOR_FURTHER_ROWS)  # Mathematical calculation delay
+                    self.increment_time(Enumerations.DIVIDE)  # Mathematical calculation delay
 
             #  Depending on the configuration, execute necessary instance
             if self.arar_check_from_lookup:
                 self.adaptive_row_activation_and_refresh_check_from_lookup(row)
                 self.increment_time(Enumerations.ARAR_LOOKUP)  # Same with TRR, reads and writes to lookup table
-                self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY)  # Same with PARA, checks should refresh
+                for i in range(2 * (self.arar_range - 1)):
+                    self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY)  # Same with PARA, checks should refresh
             else:
                 self.adaptive_row_activation_and_refresh_check_from_cache(row)
-                self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY)
+                for i in range(2 * (self.arar_range - 1)):
+                    self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY)  # Check probability for rows in range
 
     def target_row_refresh(self, row):
         self.increment_trr_lookup(row)
@@ -352,11 +354,13 @@ class Memory:
             self.time_in_ns += random.randint(OperationTimes.ARAR_PROBABILITY_CHECK_LOW,
                                               OperationTimes.ARAR_PROBABILITY_CHECK_HIGH)
         elif operation == Enumerations.ARAR_CALCULATE_PROBABILITY:
-            self.time_in_ns += random.randint(OperationTimes.ARAR_CALCULATE_PROBABILITY_LOW,
-                                              OperationTimes.ARAR_CALCULATE_PROBABILITY_HIGH)
-        elif operation == Enumerations.ARAR_DIVISION_FOR_FURTHER_ROWS:
-            self.time_in_ns += random.randint(OperationTimes.ARAR_DIVISION_FOR_FURTHER_ROWS_LOW,
-                                              OperationTimes.ARAR_DIVISION_FOR_FURTHER_ROWS_HIGH)
+            self.time_in_ns += random.randint(OperationTimes.SUBTRACTION_LOW,
+                                              OperationTimes.SUBTRACTION_HIGH)
+            self.time_in_ns += random.randint(OperationTimes.MULTIPLICATION_LOW,
+                                              OperationTimes.MULTIPLICATION_HIGH)
+        elif operation == Enumerations.DIVIDE:
+            self.time_in_ns += random.randint(OperationTimes.DIVISION_LOW,
+                                              OperationTimes.DIVISION_HIGH)
 
     def log_output(self, row, operation):
         if operation == Enumerations.MEMORY_ACCESS:
