@@ -16,8 +16,10 @@ class Memory:
                  flip_threshold_last=Configurations.FLIP_THRESHOLD_LAST,
                  trr_enabled=Configurations.TRR_ENABLED,
                  trr_threshold=Configurations.TRR_THRESHOLD,
+                 trr_range=Configurations.TRR_RANGE,
                  para_enabled=Configurations.PARA_ENABLED,
                  para_probability=Configurations.PARA_PROBABILITY,
+                 para_range=Configurations.PARA_RANGE,
                  arar_enabled=Configurations.ARAR_ENABLED,
                  arar_check_from_lookup=Configurations.ARAR_CHECK_FROM_LOOKUP,
                  arar_range=Configurations.ARAR_RANGE):
@@ -27,8 +29,10 @@ class Memory:
         self.flip_threshold_last = flip_threshold_last
         self.trr_enabled = trr_enabled
         self.trr_threshold = trr_threshold
+        self.trr_range = trr_range
         self.para_enabled = para_enabled
         self.para_probability = para_probability
+        self.para_range = para_range
         self.arar_enabled = arar_enabled
         self.arar_check_from_lookup = arar_check_from_lookup
         self.arar_range = arar_range
@@ -97,6 +101,7 @@ class Memory:
         self.increment_time(Enumerations.MEMORY_ACCESS)
 
         # Simulation operations
+        # TODO: Fix timings / calculate in detail
         for i in range(1, self.blast_radius_range + 1):
             if row + i < self.size:
                 if self.flip_threshold_first <= self.get_adjacent_access_count_for_refresh(row + i) and not self.memory[row + i].did_flip:
@@ -116,7 +121,7 @@ class Memory:
         # Probabilistic Adjacent Row Activation
         if self.para_enabled:
             self.probabilistic_adjacent_row_activation(row)
-            for i in range(2):
+            for i in range(2 * self.para_range):
                 if 0 <= row - i or row + i < self.size:
                     self.increment_time(Enumerations.PARA_CHECK_PROBABILITY)
 
@@ -126,7 +131,7 @@ class Memory:
             if self.access_count % math.ceil(Configurations.ARAR_FREQUENCY) == 0:
                 self.adaptive_row_activation_and_refresh_update(row)
                 self.increment_time(Enumerations.ARAR_CALCULATE_PROBABILITY)  # Mathematical calculation delay
-                for i in range(2 * (self.arar_range - 1)):
+                for i in range(2 * (self.arar_range)):
                     self.increment_time(Enumerations.DIVIDE)  # Mathematical calculation delay
 
             #  Depending on the configuration, execute necessary instance
@@ -141,47 +146,43 @@ class Memory:
                     self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY)  # Check probability for rows in range
 
     def target_row_refresh(self, row):
+        # TODO: Figure out what is wrong and fix it
         self.increment_trr_lookup(row)
 
-        for i in range(1, Configurations.TRR_RANGE + 1):
-            if row + i < self.size:
-                if self.trr_threshold <= self.trr_access_count_lookup[row + i]:
-                    self.trr_access_count_lookup[row + i] = 0
-                    self.refresh_row(row + i)
-                    self.trr_refresh_count += 1
-                    self.log_output(row + i, Enumerations.TRR_REFRESH)
+        if row + 1 < self.size:
+            if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
+                self.trr_access_count_lookup[row + 1] = 0
+                for i in range(1, Configurations.TRR_RANGE + 1):
+                    if row + i < self.size:
+                        self.refresh_row(row + i)
+                        self.trr_refresh_count += 1
+                        self.log_output(row + i, Enumerations.TRR_REFRESH)
 
-            if 0 <= row - i:
-                if self.trr_threshold <= self.trr_access_count_lookup[row - i]:
-                    self.trr_access_count_lookup[row - i] = 0
-                    self.refresh_row(row - i)
-                    self.trr_refresh_count += 1
-                    self.log_output(row - i, Enumerations.TRR_REFRESH)
+        if 0 <= row - 1:
+            if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
+                self.trr_access_count_lookup[row - 1] = 0
+                for i in range(1, Configurations.TRR_RANGE + 1):
+                    if 0 <= row - i:
+                        self.refresh_row(row - i)
+                        self.trr_refresh_count += 1
+                        self.log_output(row - i, Enumerations.TRR_REFRESH)
 
     def probabilistic_adjacent_row_activation(self, row):  # Uses different random values for each adjacent row
-        if row == 0:
-            random_value = random.random()
-            if random_value <= self.para_probability:
-                self.refresh_row(row + 1)
-                self.para_row_activation_count += 1
-                self.log_output(row + 1, Enumerations.PARA_ROW_ACTIVATION)
-        elif row == self.size - 1:
-            random_value = random.random()
-            if random_value <= self.para_probability:
-                self.refresh_row(row - 1)
-                self.para_row_activation_count += 1
-                self.log_output(row - 1, Enumerations.PARA_ROW_ACTIVATION)
-        else:
-            random_value_next = random.random()
-            random_value_previous = random.random()
-            if random_value_next <= self.para_probability:
-                self.refresh_row(row + 1)
-                self.para_row_activation_count += 1
-                self.log_output(row + 1, Enumerations.PARA_ROW_ACTIVATION)
-            if random_value_previous <= self.para_probability:
-                self.refresh_row(row - 1)
-                self.para_row_activation_count += 1
-                self.log_output(row - 1, Enumerations.PARA_ROW_ACTIVATION)
+        random_value_next = random.random()
+        random_value_previous = random.random()
+        for i in range(1, self.para_range + 1):
+            if row + i < self.size:
+                if random_value_next <= self.para_probability:
+                    self.refresh_row(row + i)
+                    self.para_row_activation_count += 1
+                    self.log_output(row + i, Enumerations.PARA_ROW_ACTIVATION)
+
+            if 0 <= row - i:
+                if random_value_previous <= self.para_probability:
+                    self.refresh_row(row - i)
+                    self.para_row_activation_count += 1
+                    self.log_output(row - i, Enumerations.PARA_ROW_ACTIVATION)
+
 
     #  CUSTOM OPERATIONS BEGIN
 
@@ -284,7 +285,7 @@ class Memory:
 
     def refresh_row(self, row):
         self.memory[row].refresh()
-        self.increment_time(Enumerations.MEMORY_ACCESS)
+        self.increment_time(Enumerations.REFRESH)
 
     def get_adjacent_access_count(self, row):
         return self.memory[row].get_adjacent_access_count()
@@ -314,7 +315,7 @@ class Memory:
             self.memory[row - 1].reset_right_adjacent_access_count()
 
     def reset_blast_radius_impact(self, row):
-        for i in range(1, Configurations.TRR_RANGE + 1):
+        for i in range(1, self.trr_range + 1):
             if row + i < self.size:
                 self.memory[row + i].reset_blast_radius_impacts()
 
@@ -322,12 +323,13 @@ class Memory:
                 self.memory[row - i].reset_blast_radius_impacts()
 
     def increment_trr_lookup(self, row):
-        for i in range(0, Configurations.TRR_RANGE + 1):
-            if row + i < self.size:
-                self.trr_access_count_lookup[row + i] += 1
-
-            if 0 <= row - i:
-                self.trr_access_count_lookup[row - i] += 1
+        if row == 0:
+            self.trr_access_count_lookup[row + 1] += 1
+        elif row == self.size - 1:
+            self.trr_access_count_lookup[row - 1] += 1
+        else:
+            self.trr_access_count_lookup[row + 1] += 1
+            self.trr_access_count_lookup[row - 1] += 1
 
     def increment_arar_lookup(self, row):
         if row == 0:

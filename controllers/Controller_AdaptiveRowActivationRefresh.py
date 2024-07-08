@@ -24,7 +24,7 @@ class Controller_AdaptiveRowActivationRefresh:
                              Configurations.BLAST_RADIUS_RANGE,
                              Configurations.FLIP_THRESHOLD_FIRST,
                              Configurations.FLIP_THRESHOLD_LAST,
-                             False, 0, False, 0, True, False, Configurations.ARAR_RANGE)
+                             False, 0, 0, False, 0, 0, True, False, Configurations.ARAR_RANGE)
         self.lock = threading.Lock()
         self.writer = writer
         self.stop_event = stop_event
