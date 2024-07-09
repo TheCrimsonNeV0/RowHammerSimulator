@@ -146,22 +146,21 @@ class Memory:
                     self.increment_time(Enumerations.ARAR_CHECK_PROBABILITY)  # Check probability for rows in range
 
     def target_row_refresh(self, row):
-        # TODO: Figure out what is wrong and fix it
         self.increment_trr_lookup(row)
 
         if row + 1 < self.size:
             if self.trr_threshold <= self.trr_access_count_lookup[row + 1]:
                 self.trr_access_count_lookup[row + 1] = 0
-                for i in range(1, Configurations.TRR_RANGE + 1):
+                for i in range(1, self.trr_range + 1):
                     if row + i < self.size:
                         self.refresh_row(row + i)
                         self.trr_refresh_count += 1
-                        self.log_output(row + i, Enumerations.TRR_REFRESH)
+                        self.log_output(i, Enumerations.TRR_REFRESH)
 
         if 0 <= row - 1:
             if self.trr_threshold <= self.trr_access_count_lookup[row - 1]:
                 self.trr_access_count_lookup[row - 1] = 0
-                for i in range(1, Configurations.TRR_RANGE + 1):
+                for i in range(1, self.trr_range + 1):
                     if 0 <= row - i:
                         self.refresh_row(row - i)
                         self.trr_refresh_count += 1
@@ -341,6 +340,7 @@ class Memory:
             self.arar_access_count_lookup[row - 1] += 1
 
     def increment_time(self, operation):
+        # TODO: Time increments should be considered. TRR latency is less than PARA (unexpected)
         if operation == Enumerations.MEMORY_ACCESS:
             self.time_in_ns += random.randint(OperationTimes.MEMORY_ACCESS_LOW, OperationTimes.MEMORY_ACCESS_HIGH)
         elif operation == Enumerations.REFRESH:
