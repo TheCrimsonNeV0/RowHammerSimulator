@@ -18,13 +18,13 @@ ITERATION_LIMIT = Configurations.ITERATION_LIMIT
 PATTERNS = Utility.generate_list_of_lists(9)
 
 
-class Controller_TargetRowRefresh:
+class Controller_AdaptiveRowActivationRefresh:
     def __init__(self, writer, stop_event):
         self.memory = Memory(Configurations.MEMORY_SIZE,
                              Configurations.BLAST_RADIUS_RANGE,
                              Configurations.FLIP_THRESHOLD_FIRST,
                              Configurations.FLIP_THRESHOLD_LAST,
-                             True, Configurations.TRR_THRESHOLD, Configurations.TRR_RANGE, False, 0, False, False, 0)
+                             False, 0, 0, False, 0, 0, True, False, Configurations.ARAR_RANGE)
         self.lock = threading.Lock()
         self.writer = writer
         self.stop_event = stop_event
@@ -49,10 +49,10 @@ class Controller_TargetRowRefresh:
 
                 simulation_time = self.memory.time_in_ns
                 total_access_count = self.memory.get_total_access_count()
-                trr_count = self.memory.trr_refresh_count
+                arar_count = self.memory.arar_row_activation_count
                 flip_count = self.memory.get_flip_count()
 
-                self.writer.writerow([self.iteration_count, simulation_time, total_access_count, trr_count, flip_count])
+                self.writer.writerow([self.iteration_count, simulation_time, total_access_count, arar_count, flip_count])
                 self.iteration_count += 1
             return True
 
@@ -69,13 +69,13 @@ def log(controller, stop_event):
         threading.Timer(1, log, args=(controller, stop_event)).start()
 
 def main():
-    fields = ['real_time', 'simulation_time_ns', 'total_access_count', 'trr_count', 'flip_count']
-    file = open('../outputs/output_target_row_refresh.csv', 'w', newline='')
+    fields = ['real_time', 'simulation_time_ns', 'total_access_count', 'arar_count', 'flip_count']
+    file = open('../outputs/output_adaptive_row_activation_and_refresh.csv', 'w', newline='')
     writer = csv.writer(file)
     writer.writerow(fields)
 
     stop_event = threading.Event()
-    controller = Controller_TargetRowRefresh(writer, stop_event)
+    controller = Controller_AdaptiveRowActivationRefresh(writer, stop_event)
 
     # Create threads
     thread1 = threading.Thread(target=hammer_pattern, args=(controller, stop_event))

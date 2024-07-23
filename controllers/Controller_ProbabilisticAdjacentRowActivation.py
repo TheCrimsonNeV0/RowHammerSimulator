@@ -5,6 +5,7 @@ import csv
 import Configurations
 from enumerations import Enumerations
 from memory.Memory import Memory
+from utility import Utility
 
 file = ''
 
@@ -12,9 +13,9 @@ file = ''
 VICTIM_ROW = 4
 AGGRESSOR_ROW_ONE = 3
 AGGRESSOR_ROW_TWO = 5
-ITERATION_LIMIT = 120
+ITERATION_LIMIT = Configurations.ITERATION_LIMIT
 
-PATTERNS = [[1, 3], [3, 5], [5, 7], [7, 9]]
+PATTERNS = Utility.generate_list_of_lists(9)
 
 
 class Controller_ProbabilisticAdjacentRowActivation:
@@ -23,7 +24,7 @@ class Controller_ProbabilisticAdjacentRowActivation:
                              Configurations.BLAST_RADIUS_RANGE,
                              Configurations.FLIP_THRESHOLD_FIRST,
                              Configurations.FLIP_THRESHOLD_LAST,
-                             False, 0, True, Configurations.PARA_PROBABILITY)
+                             False, 0, 0, True, Configurations.PARA_PROBABILITY, Configurations.PARA_RANGE, False, False, 0)
         self.lock = threading.Lock()
         self.writer = writer
         self.stop_event = stop_event
